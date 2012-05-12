@@ -1,0 +1,179 @@
+#! /usr/bin/perl
+
+use strict;
+use warnings;
+
+use Getopt::Long;
+
+my $pcap = 0;
+my $table = 0;
+my $header = 0;
+my $help = 0;
+if (!GetOptions("p|pcap" => \$pcap,
+                "t|table" => \$table,
+                "H|header" => \$header,
+                "h|help" => \$help)) {
+    exit(1);
+}
+
+if ($help) {
+    print <<EOF;
+nox-flow-xlate: NOX flow table translator
+usage: $0 [OPTIONS] < INPUT > OUTPUT
+  where INPUT is a FLOW_SETUP .sql file created by NOX's DWH application
+    and OUTPUT is in the selected output format.
+Output format options (exactly one required):
+  -p, --pcap        Translate input into pcap format
+  -t, --table       Translate input into easier-to-parse table
+Table format options:
+  -H, --header      Include header with field names
+Other options:
+  -h, --help        Output this usage message
+
+Usage examples:
+  For simple viewing or importing into analysis software:
+    nox-flow-xlate --table < INPUT > OUTPUT
+  For viewing in tcpdump:
+    nox-flow-xlate --pcap < INPUT | tcpdump -r - | less
+  For viewing in wireshark:
+    nox-flow-xlate --pcap < INPUT > output.pcap; wireshark output.pcap
+EOF
+    exit(0);
+}
+
+if ($pcap == $table) {
+    die("Must specify either --pcap or --table (but not both); "
+        . "use --help for help\n");
+}
+
+if ($pcap) {
+    if (-t STDOUT) {
+        die("refusing to write binary data to terminal; "
+            . "use --table or redirect to a file or pipe\n");
+    }
+    print pack("L SS l L L L", 0xa1b2c3d4, 2, 4, 0, 0, 128, 1);
+}
+if ($table && $header) {
+    print "src_mac, dst_mac, eth_type, src_ip, dst_ip, ip_proto, src_port, dst_port\n";
+}
+
+while (<>) {
+    my (@fields) = split(/,/, $_, 7);
+    my ($id, $created_dt, $type, $dp_id, $port_id, $reason, $buffer)
+      = map(unquote($_), @fields);
+    next if $id eq 'ID';
+
+    if ($pcap) {
+        print pack("LL LL", int($created_dt) / 1000000, $created_dt % 1000000,
+                   length($buffer), 1500);
+        print $buffer;
+    }
+    if ($table) {
+        print join(', ', dissect_ethernet($buffer)), "\n";
+    }
+}
+
+sub unquote {
+    my ($in) = @_;
+    $in =~ /^"(.*)"$/ or return $_;
+    my $out;
+    for (my ($i) = 1; $i < length($in) - 1; $i++) {
+        my ($c) = substr($in, $i, 1);
+        if ($c ne "\\") {
+            $out .= $c;
+        } else {
+            $c = substr($in, ++$i, 1);
+            if ($c eq '0') {
+                $out .= "\0";
+            } elsif ($c eq 'n') {
+                $out .= "\n";
+            } elsif ($c eq 't') {
+                $out .= "\t";
+            } else {
+                $out .= $c;
+            }
+        }
+    }
+    return $out;
+}
+
+sub dissect_ethernet {
+    my ($srcmac, $dstmac, $type, $rest) = unpack("a6 a6 n a*", $_[0]);
+    my (@rest);
+    if ($type >= 1500) {
+        @rest = dissect_ethertype($type, $rest);
+    } else {
+        my ($dsap, $ssap, $cntl, $org, $type2, $rest2)
+          = unpack ("CCC a3 n", $rest);
+        if ($dsap == 0xaa && $ssap == 0xaa && $cntl == 0x03
+            && $org eq "\0\0\0") {
+            @rest = dissect_ethertype($type2, $rest2);
+        } else {
+            $rest = sprintf("04x", $type);
+        }
+    }
+    return (mac_to_str($srcmac), mac_to_str($dstmac), @rest);
+}
+
+sub dissect_ethertype {
+    my ($type, $rest) = @_;
+    if ($type == 0x0800) {
+        return ("IP", dissect_ip($rest));
+    } elsif ($type == 0x0806) {
+        return ("ARP", dissect_arp($rest));
+    } else {
+        return ();
+    }
+}
+
+sub dissect_ip {
+    my ($vers_hdrlen, $tos, $ttl_len,
+        $id, $frag_ofs,
+        $ttl, $proto, $cksum,
+        $srcip, $dstip) = unpack("CCn nn CCn N N", $_[0]);
+    my ($version, $hdrlen) = ($vers_hdrlen >> 4, $vers_hdrlen & 15);
+    my ($rest) = substr($_[0], $hdrlen * 4);
+    my (@rest);
+    if ($proto == 17) {
+        @rest = ("UDP", dissect_udp($rest));
+    } elsif ($proto == 6) {
+        @rest = ("TCP", dissect_tcp($rest));
+    } else {
+        @rest = (sprintf("%02x", $proto));
+    }
+    return (ip4_to_str($srcip), ip4_to_str($dstip), @rest);
+}
+
+sub dissect_udp {
+    my ($srcport, $dstport, $len, $cksum) = unpack("nn nn", $_[0]);
+    return ($srcport, $dstport);
+}
+
+sub dissect_tcp {
+    my ($srcport, $dstport, $seq, $ack, $hdrlen, $flags, $window,
+        $cksum, $urgent) = unpack("nn N N CCn nn", $_[0]);
+    my ($rest) = substr($_[0], ($hdrlen >> 4) * 4);
+    return ($srcport, $dstport);
+}
+
+sub dissect_arp {
+    my ($hard_type, $prot_type, $hard_size, $prot_size, $op,
+        $srcmac, $srcip, $dstmac, $dstip) = unpack("nn CC n a6 N a6 N", $_[0]);
+    if ($hard_type == 1 && $prot_type == 0x800
+        && $hard_size == 6 && $prot_size == 4
+        && $op == 2) {
+        return (ip4_to_str($srcip), ip4_to_str($dstip));
+    } else {
+        return ();
+    }
+}
+
+sub mac_to_str {
+    my ($mac) = @_;
+    return join(':', map(sprintf("%02X", $_), unpack("C6", $mac)));
+}
+
+sub ip4_to_str {
+    my ($ip4) = @_;
+    return join('.', map(sprintf("%d", $_), unpack("C4", pack("N", $ip4))));
+}

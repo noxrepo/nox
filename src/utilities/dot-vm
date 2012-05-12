@@ -1,0 +1,145 @@
+#! /bin/bash -e
+#======================================================================
+# Copyright 2008 (C) Nicira, Inc.
+# 
+# This file is part of NOX.
+# 
+# NOX is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# NOX is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with NOX.  If not, see <http://www.gnu.org/licenses/>.
+#======================================================================
+
+
+run_cmd() {
+    :
+}
+
+DOT=dot
+SHOW_SWITCHES=yes
+for option; do
+    # This option-parsing mechanism borrowed from a Autoconf-generated
+    # configure script under the following license:
+
+    # Copyright (C) 1992, 1993, 1994, 1995, 1996, 1998, 1999, 2000, 2001,
+    # 2002, 2003, 2004, 2005, 2006 Free Software Foundation, Inc.
+    # This configure script is free software; the Free Software Foundation
+    # gives unlimited permission to copy, distribute and modify it.
+
+    # If the previous option needs an argument, assign it.
+    case $option in
+	*=*) optarg=`expr "X$option" : '[^=]*=\(.*\)'` ;;
+	*) optarg=yes ;;
+    esac
+
+    case $dashdash$option in
+	--)
+	    dashdash=yes ;;
+	-h|--help)
+	    cat <<EOF
+dot-vm: show the structure of a VM environment
+usage: $0 [OPTIONS] [VMS.CONF]
+where VMCONF is the name of a configuration file describing the VMs to be
+created (default: vms.conf).  See vms.conf(5) for a format description.
+The valid OPTIONS are:
+  --dot=UTILITY         use UTILITY to draw the diagram (default: dot)
+The output shows VMs as ovals, switches as diamonds, and labels
+each Ethernet interface with the last octet of its MAC address.
+EOF
+	    exit 0
+	    ;;
+	--dot=*)
+	    DOT=$optarg
+	    ;;
+        --no-switches)
+            SHOW_SWITCHES=no
+            ;;
+	-*)
+	    echo "unrecognized option $option"
+	    exit 1
+	    ;;
+	*)
+	    if test -z "$VMCONF"; then
+		VMCONF="$option"
+	    else
+		echo "only one configuration file may be specified"
+		exit 1
+	    fi
+	    ;;
+    esac
+    shift
+done
+
+. ${VMCONF:-vms.conf}
+base=`echo "$VMCONF" | sed 's/\.conf//'`
+
+{
+echo "graph network {"
+if test "$SHOW_SWITCHES" = "yes"; then
+    for switch in $SWITCHES $HUBS; do
+        echo "  $switch [shape=diamond, style=filled, fillcolor=red, fontcolor=white];"
+    done
+    mac=1
+    for vm in $VMS; do
+        eval nets="\${${vm}_NETS?}"
+        case $vm in
+            sc*|secchan*) echo "$vm [label=\"$vm (switch $mac)\", style=filled, fillcolor=yellow];" ;;
+            end*) echo "$vm [style=filled, fillcolor=blue, fontcolor=white];" ;;
+        esac
+        for net in $nets; do
+            printf " $vm -- $net [taillabel=\"%x\"];\\n" $mac
+            let mac=$mac+1
+        done
+    done
+else
+    mac=1
+    for vm in $VMS; do
+        eval nets="\${${vm}_NETS?}"
+        case $vm in
+            sc*|secchan*) echo "$vm [label=\"$vm (switch $mac)\", style=filled, fillcolor=yellow];" ;;
+            end*) echo "$vm [style=filled, fillcolor=blue, fontcolor=white];" ;;
+        esac
+        for net in $nets; do
+            eval "${net}_vms=\"\${${net}_vms} $vm\""
+        done
+    done
+    for switch in $SWITCHES $HUBS; do
+        eval switch_vms="\${${switch}_vms}"
+        echo "$switch: $switch_vms" 1>&2
+        if test "$switch" = "control"; then
+            continue
+        fi
+#         set $switch_vms
+#         echo -n "$1 -- {"
+#         shift
+#         for d; do
+#             echo -n " $d"
+#         done
+#         echo " } [label=\"$switch\"];"
+         
+         for a in $switch_vms; do
+             seen=
+             for b in $switch_vms; do
+                 if test -n "$seen"; then
+                     echo "$a -- $b [label=\"$switch\", fontsize=5];"
+                 elif test "$a" = "$b"; then
+                     seen=yes
+                 else
+                     :
+                 fi
+             done
+         done
+   done
+fi
+echo "}"
+} > $base.dot
+$DOT -Tps < $base.dot > $base.ps
+gv $base.ps

@@ -1,0 +1,96 @@
+#!/usr/bin/python
+
+"""Syntax: migrate-database <version>
+
+ Upgrades the current NOX database to the version defined, if
+ possible.  If the database cannot be upgraded, the database is
+ snapshotted and replaced with the latest database matching to the
+ version.  If no matching snapshot can be found, the database is
+ snapshotted and replaced with an empty database.
+
+ Return values:
+
+    0 -- Database upgraded and or replaced with a snapshot.  Also if
+         the system had no existing NOX database, 0 is returned.
+"""  
+
+import os
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle    
+import subprocess
+import sys
+
+NOX_DATABASE = "/opt/virtex/var/lib/virtex.cdb"
+SNAPSHOT_DIRECTORY = '/var/log/noxdb'
+SNAPSHOT_INSTALL = "/tmp/cdb.restore.snapshot"
+
+# Versions the script can upgrade
+SUPPORTED_VERSIONS = {}
+
+if len(sys.argv) != 2:
+    print __doc__
+    sys.exit(1)
+
+TARGET_VERSION = sys.argv[1]
+
+# First figure out the current database versions
+try:
+    os.stat(NOX_DATABASE)
+except OSError:
+    # No current database.  Nothing to do.
+    sys.exit(0)
+
+try:       
+    SQL_QUERY_VERSION = "SELECT VERSION FROM NOX_SCHEMA_DATABASE;"
+    stdout, stderr = subprocess.Popen(['sqlite3', NOX_DATABASE,
+                                       SQL_QUERY_VERSION],
+                                      stdout=subprocess.PIPE,
+                                      stderr=subprocess.PIPE).\
+                                      communicate()
+    if len(stderr) > 0:
+        print "Unable to access the NOX database:", stderr
+        sys.exit(1)
+
+except OSError, e:
+    # Can't access the NOX database.
+    print "Unable execute SQLite.", e
+    sys.exit(1)
+
+database_version = stdout.rstrip().lstrip()
+if database_version == TARGET_VERSION:
+    # Database is up-to-date, nothing to do.
+    sys.exit(0)
+
+if SUPPORTED_VERSIONS.has_key(TARGET_VERSION):
+    print 'Upgrading the database to version %s...' % TARGET_VERSION
+    # raise NotImplementedError()
+    sys.exit(1)
+
+else:
+    print 'Searching for a snapshot for version %s...' % TARGET_VERSION
+
+    found = None
+    for f in os.listdir(SNAPSHOT_DIRECTORY):
+        try:
+            snapshot = pickle.load(file(f))
+            if snapshot['version'] == TARGET_VERSION:
+                timestamp = os.stat(f)[8]
+                if found is None or found[0] < timestamp:
+                    found = (timestamp, f)
+        except:
+            print "Unable to load the snapshot file '%s', " \
+                "skipping..." % f
+
+    # Install the snapshot, if found.
+    if found is not None:
+        print 'Installing a snapshot waiting for the next NOX restart...'
+        timestamp, snapshot = found
+        shutil.copy2(snapshot, SNAPSHOT_INSTALL)
+        sys.exit(0)
+
+    # Cleanup the database, since nothing was found.
+    print 'Creating an empty, supported database...'
+    os.unlink(NOX_DATABASE)
+    sys.exit(0)

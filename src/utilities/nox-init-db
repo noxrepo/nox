@@ -1,0 +1,101 @@
+#! /bin/sh -e
+
+DRY_RUN=
+export DRY_RUN
+
+default_database='/usr/local/var/nox'/networkdb
+database=$default_database
+force=no
+for option; do
+    # This option-parsing mechanism borrowed from a Autoconf-generated
+    # configure script under the following license:
+
+    # Copyright (C) 1992, 1993, 1994, 1995, 1996, 1998, 1999, 2000, 2001,
+    # 2002, 2003, 2004, 2005, 2006 Free Software Foundation, Inc.
+    # This configure script is free software; the Free Software Foundation
+    # gives unlimited permission to copy, distribute and modify it.
+
+    # If the previous option needs an argument, assign it.
+    if test -n "$prev"; then
+	eval $prev=\$option
+	prev=
+	continue
+    fi
+    case $option in
+	*=*) optarg=`expr "X$option" : '[^=]*=\(.*\)'` ;;
+	*) optarg=yes ;;
+    esac
+
+    case $dashdash$option in
+	--)
+	    dashdash=yes ;;
+	-n|--dry-run)
+	    DRY_RUN=:
+	    ;;
+	-h|--help)
+	    cat <<EOF
+nox-init-db, for initializing the NOX network database
+usage: $0 [OPTIONS]
+The valid OPTIONS are:
+  -d, --db=DBFILE  Initialize DBFILE (default: $default_database)
+  -f, --force      Allow overwriting existing database.
+  -n, --dry-run    Only print the commands that would be executed.
+  -h, --help       Print this usage message.
+EOF
+	    exit 0
+	    ;;
+	--d*=*)
+	database=$optarg
+	;;
+	--d*|-d)
+	    prev=database
+	    ;;
+        -f|--force)
+            force=yes
+            ;;
+	-*)
+	    echo "unrecognized option $option"
+	    exit 1
+	    ;;
+	*)
+	    echo "non-option arguments not accepted"
+	    exit 1
+	    ;;
+    esac
+    shift
+done
+if test -n "$prev"; then
+    option=--`echo $prev | sed 's/_/-/g'`
+    { echo "$as_me: error: missing argument to $option" >&2
+	{ (exit 1); exit 1; }; }
+fi
+
+if test -e $database; then
+    if test $force = "yes"; then
+        $DRY_RUN rm $database
+    else
+        echo "$database already exists, not overwriting (override with --force)"
+        exit 1
+    fi
+fi
+
+$DRY_RUN sqlite3 $database <<'EOF'
+CREATE TABLE IF NOT EXISTS learning (switch INTEGER, mac INTEGER, port INTEGER);
+CREATE UNIQUE INDEX IF NOT EXISTS learning_switch_mac ON learning (switch, mac);
+
+CREATE TABLE IF NOT EXISTS lldp (switch1 INTEGER, port1 INTEGER, switch2 INTEGER, port2 INTEGER);
+/*
+ * Table of direction links as inferred by lldp
+ * dp1:port1 -> dp2:port2
+ * bi-directional links have to entries
+ */
+CREATE TABLE IF NOT EXISTS lldp_links(
+        dp1     INTEGER,
+        port1   INTEGER,
+        dp2     INTEGER,
+        port2   INTEGER
+);
+CREATE TABLE IF NOT EXISTS auth (switch INTEGER, mac INTEGER, port INTEGER);
+CREATE UNIQUE INDEX IF NOT EXISTS auth_switch_mac_port
+       ON auth (switch, mac, port);
+EOF

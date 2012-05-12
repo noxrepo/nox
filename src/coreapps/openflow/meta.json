@@ -1,0 +1,5 @@
+{
+  "openflow-manager": {
+    "library": "openflow_manager"
+  }
+}

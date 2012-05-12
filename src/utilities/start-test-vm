@@ -1,0 +1,300 @@
+#! /bin/bash -e
+#======================================================================
+# Copyright 2008, 2009 (C) Nicira, Inc.
+# 
+# This file is part of NOX.
+# 
+# NOX is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# NOX is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with NOX.  If not, see <http://www.gnu.org/licenses/>.
+#======================================================================
+
+DRY_RUN=
+export DRY_RUN
+
+override_VMM=
+override_MEM=
+for option; do
+    # This option-parsing mechanism borrowed from a Autoconf-generated
+    # configure script under the following license:
+
+    # Copyright (C) 1992, 1993, 1994, 1995, 1996, 1998, 1999, 2000, 2001,
+    # 2002, 2003, 2004, 2005, 2006 Free Software Foundation, Inc.
+    # This configure script is free software; the Free Software Foundation
+    # gives unlimited permission to copy, distribute and modify it.
+
+    # If the previous option needs an argument, assign it.
+    if test -n "$prev"; then
+	eval $prev=\$option
+	prev=
+	continue
+    fi
+    case $option in
+	*=*) optarg=`expr "X$option" : '[^=]*=\(.*\)'` ;;
+	*) optarg=yes ;;
+    esac
+
+    case $dashdash$option in
+	--)
+	    dashdash=yes ;;
+	-n|--dry-run)
+	    DRY_RUN=:
+	    ;;
+	-h|--help)
+	    cat <<EOF
+start-test-vm, for starting a collection of networked test VMs
+usage: $0 [OPTIONS] [VMCONF]
+where VMCONF is the name of a configuration file describing the VMs to be
+created (default: vms.conf).  See vms.conf(5) for a format description.
+The valid OPTIONS are:
+  -f, --foreground=VM  Run this VM in the foreground
+  -o, --only=VM        Run only VM, in the foreground, with persistent changes
+  -v, --vmm=VMM        Use VMM to run virtual machines (default: kvm if
+                       processor support, otherwise qemu)
+  -m, --mem=MEM        Give each machine MEM megabytes RAM (default: 32)
+  -n, --dry-run        Only print the commands that would be executed.
+  -h, --help           Print this usage message.
+EOF
+	    exit 0
+	    ;;
+	--f*=*)
+	foreground=$optarg
+	;;
+	--f*|-f)
+	    prev=foreground
+	    ;;
+	--o*=*)
+	only=$optarg
+	;;
+	--o*|-o)
+	    prev=only
+	    ;;
+	--vmm=*)
+	override_VMM=$optarg
+	;;
+	--vmm|-v)
+	    prev=override_VMM
+	    ;;
+	--mem=*)
+	override_MEM=$optarg
+	;;
+	--mem|-m)
+	    prev=override_MEM
+	    ;;
+	-*)
+	    echo "unrecognized option $option"
+	    exit 1
+	    ;;
+	*)
+	    if test -z "$VMCONF"; then
+		VMCONF="$option"
+	    else
+		echo "only one configuration file may be specified"
+		exit 1
+	    fi
+	    ;;
+    esac
+    shift
+done
+if test -n "$prev"; then
+    option=--`echo $prev | sed 's/_/-/g'`
+    { echo "$as_me: error: missing argument to $option" >&2
+	{ (exit 1); exit 1; }; }
+fi
+
+if test -n "$only"; then
+    unset foreground
+fi
+
+function run_cmd {
+    echo "$@"
+    $DRY_RUN eval "$@"
+}
+
+stop-test-vm
+
+. ${VMCONF:-vms.conf}
+
+if test -n "$override_VMM"; then
+    VMM=$override_VMM
+elif test -z "$VMM"; then
+    if egrep -q '^flags.*(vmx|svm)' /proc/cpuinfo && 
+	command -v kvm > /dev/null 2>&1; then
+	VMM=kvm
+    else
+	VMM=qemu
+    fi
+    echo "using VMM=$VMM"
+fi
+
+if test -n "$override_MEM"; then
+    MEM=$override_MEM
+else
+    : ${MEM:=32}
+fi
+
+if test -z "$only"; then
+    rm -rf vde
+    mkdir vde
+    for switch in ${SWITCHES?}; do
+	eval options=\${${switch}_OPTIONS}
+	run_cmd vde_switch --daemon \
+	    --sock $PWD/vde/ctl$switch --mod 700 \
+	    --mgmt $PWD/vde/mgmt$switch --mgmtmode 700 \
+	    $options
+	eval slirp=\${${switch}_SLIRP:-no}
+	if test -n "$slirp" && test "$slirp" != "no"; then
+            if test "$slirp" = "yes"; then
+                slirp=
+            fi
+	    run_cmd slirpvde -daemon -socket $PWD/vde/ctl$switch -dhcp $slirp
+	fi
+    done
+fi
+
+mac=01
+for vm in ${only:-${VMS?}}; do
+    eval hda=\${${vm}_HDA:-hda.dsk}
+    if ! test -w "$hda"; then
+	if ! test -e "$hda"; then
+	    echo "$hda: does not exist"
+	else
+	    echo "$hda: not writable"
+	fi
+	exit 1
+    fi
+    eval kernel=\${${vm}_KERNEL:-kernel.bin}
+    eval initrd=\${${vm}_INITRD:-initrd.img}
+    eval kernel_opts=\${${vm}_KERNEL_OPTS}
+    eval nets="\${${vm}_NETS?}"
+    if test -n "$only"; then
+	snapshot_default=no
+    else
+	snapshot_default=yes
+    fi
+    eval snapshot=\${${vm}_SNAPSHOT:-${snapshot_default}}
+    if test -z "$only"; then
+        dirs=
+        if type ${vm}_files 2>/dev/null | grep 'is a function' >/dev/null; then
+            dirs="$dirs tmp$$"
+            rm -rf tmp$$
+            mkdir tmp$$
+            (cd tmp$$ && ${vm}_files)
+        fi
+        if test -e "$vm.cd"; then
+            dirs="$dirs $vm.cd"
+        fi
+        if test -n "$dirs"; then
+	    run_cmd genisoimage -o $vm.iso -r -f -quiet $dirs
+        else
+            rm -f $vm.iso
+        fi
+        rm -rf tmp$$
+    fi
+    if test "$VMM" = "linux"; then
+	if test "$kernel" = "kernel.bin"; then
+	    kernel=./linux
+	fi
+	cmd="$kernel mem=${MEM}M root=/dev/ubda1 $kernel_opts"
+	cmd="$cmd con0=fd:0,fd:1 con=null ssl=null console=tty0"
+	if test -e $initrd; then
+	    cmd="$cmd initrd=$initrd"
+	fi
+	
+	if test -z "$only"; then
+	    ethn=0
+	    for switch in $nets; do
+		cmd="$cmd eth$ethn=daemon,50:54:00:00:00:$mac,unix,$PWD/vde/ctl$switch/ctl"
+		mac=$(printf "%02x" $((0x$mac + 1)))
+		ethn=$(($ethn + 1))
+	    done
+
+	    if test -e $vm.cd; then
+		cmd="$cmd ubdb=$vm.iso"
+	    fi
+	fi
+
+	rm -f $vm.cow
+	if test "$snapshot" = "no"; then
+	    cmd="$cmd ubda=$hda"
+	else
+	    cmd="$cmd ubda=$vm.cow,$hda"
+	fi
+    else
+	cmd="-m $MEM -hda $hda -kernel $kernel"
+	cmd="$cmd -append 'root=/dev/hda1 console=ttyS0 apm=power-off noapic $kernel_opts' -nographic"
+	if test -e $initrd; then
+	    cmd="$cmd -initrd $initrd"
+	fi
+
+	if test -z "$only"; then
+	    cmd="vdeq $VMM --mod 700 $cmd"
+	    for switch in $nets; do
+                case $switch in
+                    host*)
+		        cmd="$cmd -net nic,model=rtl8139,macaddr=50:54:00:00:00:$mac "
+                        cmd="$cmd -net user -redir tcp:8080::8080 -redir tcp:2222::22"
+                        ;;
+                    *)
+                        # These vlans have nothing to do with Ethernet VLANs.
+                        # See the QEMU documentation for details.
+		        vlan=$(printf "%d" 0x$mac)
+		        cmd="$cmd -net nic,model=rtl8139,vlan=$vlan,macaddr=50:54:00:00:00:$mac "
+		        cmd="$cmd -net vde,vlan=$vlan,sock=$PWD/vde/ctl$switch"
+                        ;;
+                esac
+		mac=$(printf "%02x" $((0x$mac + 1)))
+	    done
+
+
+            if test -n "${HUBS}"; then
+                vhub_id=2100
+                for vhub in ${HUBS}; do
+                    eval vhosts=\$${vhub}_VHUB
+                    for vhost in $vhosts; do
+                        if test $vhost = $vm; then
+		            vlan=$(printf "%d" 0x$mac)
+		            cmd="$cmd -net nic,model=rtl8139,vlan=$vlan,macaddr=50:54:00:00:00:$mac -net socket,vlan=$vlan,mcast=230.0.0.1:$vhub_id"
+		            mac=$(printf "%02x" $((0x$mac + 1)))
+                        fi
+                    done
+                    vhub_id=$(($vhub_id + 1))
+                done
+            fi
+            
+            if test -e $vm.iso; then
+	        cmd="$cmd -cdrom $vm.iso"
+            fi
+	else
+	    cmd="$VMM $cmd -net nic,model=rtl8139 -net user,hostname=$vm"
+	fi
+	if test "$snapshot" != "no"; then
+	    cmd="$cmd -snapshot"
+	fi
+    fi
+
+    if test -z "$only"; then
+	cat > $vm.screenrc <<EOF
+deflog on
+logfile $vm.log
+logfile flush 1
+logtstamp on
+EOF
+	cmd="screen -c $PWD/$vm.screenrc -dm -S $vm -e ^Oo $cmd"
+    fi
+
+    run_cmd "$cmd"
+done
+
+if test -n "$foreground$FOREGROUND"; then
+    exec monitor ${foreground:-${FOREGROUND}} --once
+fi

@@ -1,0 +1,14 @@
+#!/bin/sh
+
+SQLITE3BIN=/usr/bin/sqlite3
+
+if test $# -lt 1; then
+    echo "usage: $0 <database_file>" && exit 1
+fi
+
+if test ! -w $1; then
+    echo "File '$1' does not exist or is not writable" && exit 2
+fi
+
+#default hash values for "admin" (without quotes)
+$SQLITE3BIN $1 "update nox_passwords set password_hash='6d377f7cf946ad4dddb3b5cb942e762e', password_salt='pY~t25v%eo' where name='admin';"

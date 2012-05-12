@@ -1,0 +1,157 @@
+#!/bin/sh
+# Copyright (c) 2008 Nicira Networks
+
+#
+# Monitor logic:
+#
+# On initial startup, it waits for a long time (LONG_INTERVAL)
+# before polling to see if nox_core is running.  
+#
+# Thereafter, each SHORT_INTERVAL seconds, it checks that the process exists
+# by verifying that the processes's pid (specified in the pid 
+# file) exists in /proc.  If not, it reboots the process. If
+# FAIL_THRESH failures happen contiguously, the monitor stops
+# attempting to reboot the system.
+#
+# FAIL_THRESH is only reset after UP_INTIL_RESET polls have been
+# successful.  This is is prevent a deterministic error that happens
+# within a few poll intervals from continuing indefinitely.
+#
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+START_SCRIPT=""
+NOXCORE_PID=/var/run/nox.pid
+COREDIR="/var/log/core/"
+LOG_FILE=""
+UP_UNTIL_RESET=3 # Number of succesful poll loop iterations
+                 # before we reset fail counter
+LONG_INTERVAL=20 # wait a long time for the 1st interval after starting nox
+SHORT_INTERVAL=1 # once nox is running, poll every quickly
+FAIL_THRESH=10   # Keep this high in case machine is under high load
+
+POLL_INTERVAL=$LONG_INTERVAL 
+
+usage() {
+    echo usage: $0 options
+    echo
+    echo "OPTIONS:"
+    echo "  -s   Specify start script"
+    echo "  -h   Show this message"
+    echo "  -p   PID file for noxcore (default: $NOXCORE_PID)"
+    echo "  -l   File to log messages (default: $LOG_FILE)"
+    echo "  -c   Number of consecutive failures before stopping monitor (default: $FAIL_THRESH)"
+    echo "  -o   Directory where cores are dumped to.  It is assumed cores have the following format nax_core.<time>.<pid>" 
+}
+
+log() {
+    if test -z "$LOG_FILE"; then
+        logger -t "nox-monitor" $1
+    else    
+        logger -t "nox-monitor" -f $LOG_FILE $1
+    fi
+}
+
+check_core() {
+    # Check if there is a corefile for this pid.  If so,
+    # log to syslog
+    pid=`cat $NOXCORE_PID`
+
+    for f in $COREDIR*
+    do
+      core_pid=${f#"$COREDIR"core.nox_core.*.}
+
+      if [ "$pid" = "$core_pid" ]; then
+        log "found corefile $f"
+      fi
+    done
+}
+
+
+while getopts "hp:s:l:i:c:" OPTION; do
+    case $OPTION in
+        h)
+            usage
+            exit 1
+            ;;
+
+        p) 
+            NOXCORE_PID=$OPTARG
+            ;;
+
+        l) 
+            LOG_FILE=$OPTARG
+            ;;
+
+        i) 
+            SHORT_INTERVAL=$OPTARG
+            ;;
+
+        c) 
+            FAIL_THRESH=$OPTARG
+            ;;
+
+        s) 
+            START_SCRIPT=$OPTARG
+            ;;
+        o) 
+            COREDIR=$OPTARG
+            ;;
+        *)
+            echo "Unknown option: ${OPTION}"
+    esac
+done
+
+if test -z "$START_SCRIPT"; then
+    log "Error no start script specified on command line"
+    echo "Error no start script specified on command line"
+    echo "  use -h for options"
+    exit 1
+fi
+
+if [ ! -f $NOXCORE_PID ]; then
+    log "No noxcore pid file: ${NOXCORE_PID}" 
+    echo "No noxcore pid file: ${NOXCORE_PID}" 
+fi
+
+
+let NOXCORE_DOWN=0
+let CONTIGUOUS_UP=$UP_UNTIL_RESET
+log "===== Starting Monitor ===="
+while `/bin/true`; do
+    # Only check for liveness if the noxcore's PID file exists.  The PID
+    if [ -f $NOXCORE_PID ]; then
+        pid=`cat $NOXCORE_PID`
+        if [ -d /proc/$pid ]; then
+            if [ $CONTIGUOUS_UP -ge $UP_UNTIL_RESET ]; then
+              let NOXCORE_DOWN=0
+            else 
+              let CONTIGUOUS_UP++
+            fi
+        else
+            let NOXCORE_DOWN++
+            let CONTIGUOUS_UP=0
+            log "nox_core not running, rebooting $NOXCORE_DOWN"
+            # check whether a corefile was dumped
+            check_core
+            killall nox_core
+            $START_SCRIPT restart 
+	          POLL_INTERVAL=$LONG_INTERVAL
+        fi
+    else    
+        log "No noxcore pid file: ${NOXCORE_PID}, starting nox" 
+        let NOXCORE_DOWN++
+        let CONTIGUOUS_UP=0
+        killall nox_core
+        $START_SCRIPT restart
+	      POLL_INTERVAL=$LONG_INTERVAL
+    fi
+
+    if [ $NOXCORE_DOWN -ge $FAIL_THRESH ]; then
+            log "NOX failed to start ${NOXCORE_DOWN} times...stopping monitor!"
+            exit 1
+    fi
+
+    sleep $POLL_INTERVAL 
+    POLL_INTERVAL=$SHORT_INTERVAL
+done

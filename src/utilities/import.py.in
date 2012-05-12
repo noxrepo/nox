@@ -1,0 +1,154 @@
+#!/usr/bin/python
+"""
+import.py [-hilsp] [--help ][--import] [--loaded] [--source_id] [--postfix] [--dbuser] [--dbpasswd] [--db]
+"""
+
+import getopt
+import errno
+import os
+import shutil
+import sys
+import time
+import MySQLdb
+
+# Settings
+PATH_IMPORT='@pkglocalstatedir@/import'
+PATH_LOADED='@pkglocalstatedir@/loaded'
+DUMP_POSTFIX = '.sql'
+DUMP_SOURCE_ID = '1'
+PATH_LOCK=PATH_IMPORT + '/lock'
+DB_DB='nox_dwh'
+DB_HOST='localhost'
+DB_USER='nox_dwh'
+DB_PASSWD='nox_dwh'
+QUIET=False
+
+class AlreadyLocked(Exception):
+    pass
+
+class Lock:
+    locked = 0
+
+    def __init__(self):
+        if os.path.isdir(PATH_LOCK):
+            raise AlreadyLocked
+        try:
+            os.mkdir(PATH_LOCK)
+            self.locked = 1
+        except os.error, e:
+            if e.errno == errno.EEXIST:
+                raise AlreadyLocked
+            else:
+                raise
+
+    def __del__(self):
+        if self.locked:
+            os.rmdir(PATH_LOCK)
+
+def main(argv=sys.argv):
+    try:
+        opts, args = getopt.getopt(argv[1:], "hqi:l:s:p:", 
+                                   ["help", "import=", "loaded=", 
+                                    "source_id=", "postfix=",
+                                    "dbuser=", "dbpasswd=", "db="])
+        for o, a in opts:
+            if o in ("-h", "--help"):
+                print __doc__
+                return 3
+            elif o in ("-q"):
+                global QUIET
+                QUIET=True
+            elif o in ("-i", "--import"):
+                global PATH_IMPORT
+                PATH_IMPORT=a
+            elif o in ("-l", "--loaded"):
+                global PATH_LOADED
+                PATH_LOADED=a
+            elif o in ("--source_id"):
+                global DUMP_SOURCE_ID
+                DUMP_SOURCE_ID=a
+            elif o in ("-p", "--postfix"):
+                global DUMP_POSTFIX
+                DUMP_POSTFIX=a
+            elif o in ("--dbuser"):
+                global DB_USER
+                DB_USER=a
+            elif o in ("--dbpasswd"):
+                global DB_PASSWD
+                DB_PASSWD=a
+            elif o in ("--db"):
+                global DB_DB
+                DB_DB=a
+        
+        if not os.path.isdir(PATH_LOADED):
+            print "%s: not a directory" % PATH_LOADED
+            return 1
+
+        global PATH_LOCK
+        PATH_LOCK=PATH_IMPORT + '/lock'
+        lock = Lock()
+    
+        conn = MySQLdb.connect(host = DB_HOST, user = DB_USER, 
+                               passwd = DB_PASSWD, db = DB_DB)
+
+        files = os.listdir(PATH_IMPORT)
+        files.sort()
+        for file in files:
+            if not file.endswith(DUMP_POSTFIX):
+                continue
+
+            cursor = conn.cursor()
+
+            # Determine the meta data: table name, timestamps, serial
+            # and the order of columns.
+            table, first_entry, last_entry, serial = file.split('-')
+            var_i = 1
+            sets = ''
+            cols = ''
+            for column in open(PATH_IMPORT + '/' + file).readline().split(','):
+                if var_i == 1:
+                    sets += '%s = @var%d' % (column, var_i)
+                    cols += '%s' % column
+                else:
+                    sets += ', %s = @var%d' % (column, var_i)
+                    cols += ', %s' % column
+
+                var_i += 1
+
+            # Check the file hasn't been loaded before.
+            q = "SELECT * FROM LOAD_LOG WHERE FILE_NAME = '%s'" % file
+            cursor.execute(q)
+            result = cursor.fetchone()
+            if result == None:
+                # If not, load it and run the post-processing
+                # procedure.
+                q = "LOAD DATA INFILE '%s' INTO TABLE %s FIELDS " % (PATH_IMPORT + 
+                                                                     '/' + file, table + '_STAGING')
+                q += """TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"' LINES TERMINATED BY '\\n' """
+                q += "IGNORE 1 LINES (%s)" % cols
+                cursor.execute(q)
+                cursor.callproc("LOAD_%s" % table, [DUMP_SOURCE_ID, file])            
+
+            # Commit any changes to the database and cleanup.
+            cursor.close()
+            conn.commit()
+            shutil.move(PATH_IMPORT + '/' + file, PATH_LOADED)
+
+        # Done!
+        conn.close()
+        return 0
+
+    except getopt.error, msg:
+        print "For help use '--help'"
+        return 1
+    except AlreadyLocked, e:
+        if not QUIET:
+            print "Importing ongoing. Exiting."
+        return 2
+    except Exception, e:
+        import traceback
+        traceback.print_exc(e)
+        return 3
+
+if __name__ == "__main__":
+    sys.exit(main())

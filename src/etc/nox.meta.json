@@ -1,0 +1,13 @@
+{
+  "dso-deployer": {
+  },
+  "connection-manager": {
+  },
+  "event-dispatcher": {
+    "events": {
+      "Openflow_msg_event": [
+        "switchrtt"
+      ]
+    }
+  }
+}

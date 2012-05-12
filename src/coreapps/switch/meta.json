@@ -1,0 +1,8 @@
+{
+  "switch" : {
+    "library" : "switch",
+    "dependencies" : {
+      "openflow-manager" : "0"
+    }
+  }
+}

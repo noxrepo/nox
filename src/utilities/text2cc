@@ -1,0 +1,17 @@
+#! /usr/bin/perl
+use strict;
+use warnings;
+die "usage: $0 HEADERS NAMESPACE VARIABLE < FILE.TXT > FILE.CC\n"
+  if @ARGV != 3;
+my ($headers, $namespace, $variable) = @ARGV;
+print "#include \"$_\"\n" foreach split(/,/, $headers);
+print "\n";
+print "namespace $_ {\n" foreach split(/::/, $namespace);
+print "\nconst char* $variable =";
+while (<STDIN>) {
+      chomp;
+      s/([\"])/\\$1/g;
+      print "\n  \"$_\\n\"";
+}
+print ";\n\n";
+print "} // namespace $_\n" foreach reverse(split(/::/, $namespace));

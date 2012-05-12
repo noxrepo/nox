@@ -1,0 +1,9 @@
+Package: nox-dependencies
+Version: 0.2
+Architecture: all
+Depends: doxygen, build-essential, autoconf, automake, make, g++, libtool, python, libssl-dev, libboost-dev (>= 1.42), libtbb-dev
+Suggests: git-core
+Maintainer: Amin Tootoonchian [amin@cs.toronto.edu]
+Description: This package installs the dependencies needed for NOX
+	     to be built from source.  There is no actual content
+	     in this package.

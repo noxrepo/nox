@@ -1,0 +1,13 @@
+See doc/manual/build/html/index.html for installation instructions
+(or doc/manual/source/installation.rst for a text version with some
+minor markup)
+
+For the impatient:
+
+    ./boot.sh
+    mkdir build/
+    cd build/
+    ../configure
+    make
+    cd src
+    make check
