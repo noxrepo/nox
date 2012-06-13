@@ -39,7 +39,7 @@ class Openflow_datapath_leave_event
 {
 public:
     Openflow_datapath_leave_event(boost::shared_ptr<Openflow_datapath> dp_)
-		: Event(static_get_name()), dp(dp_) { }
+        : Event(static_get_name()), dp(dp_) { }
 
     static const Event_name static_get_name()
     {

@@ -51,21 +51,21 @@ dump_backtrace()
        frame[0] points to the next frame.
        frame[1] points to the return address. */
     for (void** frame = (void**) __builtin_frame_address(0);
-            frame != NULL &&
-            frame[0] != NULL && frame != frame[0];
-            frame = (void**) frame[0])
+         frame != NULL &&
+         frame[0] != NULL && frame != frame[0];
+         frame = (void**) frame[0])
     {
         /* Translate return address to symbol name. */
         Dl_info addrinfo;
         if (!dladdr(frame[1], &addrinfo) || !addrinfo.dli_sname)
         {
-            trace += boost::str(boost::format("  0x%08"PRIxPTR"\n")
+            trace += boost::str(boost::format("  0x%08" PRIxPTR"\n")
                                 % (uintptr_t) frame[1]);
             continue;
         }
 
         /* Demangle symbol name. */
-        const char *name = addrinfo.dli_sname;
+        const char* name = addrinfo.dli_sname;
         char* demangled_name = NULL;
         int err;
         demangled_name = __cxxabiv1::__cxa_demangle(name, 0, 0, &err);
@@ -80,7 +80,7 @@ dump_backtrace()
 
         /* Print. */
         trace +=
-            boost::str(boost::format("  0x%08"PRIxPTR" %4u (%s+0x%x)\n")
+            boost::str(boost::format("  0x%08" PRIxPTR" %4u (%s+0x%x)\n")
                        % (uintptr_t) frame[1] % frame_size % name
                        % ((char*) frame[1] - (char*) addrinfo.dli_saddr));
 
@@ -120,7 +120,7 @@ std::string demangle_undefined_symbol(const std::string& cause)
 
     size_t demangled_length;
     int status;
-    char *demangled =
+    char* demangled =
         __cxxabiv1::__cxa_demangle(symbol_name.c_str(), 0,
                                    &demangled_length, &status);
     const string demangled_symbol_name = demangled ? demangled : symbol_name;
@@ -172,7 +172,7 @@ create_signal_stack()
 
     stack_t ss;
     /* ss_sp is char* in BSDs and not void* as typically. */
-    ss.ss_sp = (char *)malloc(SIGSTKSZ);
+    ss.ss_sp = (char*)malloc(SIGSTKSZ);
     ss.ss_size = SIGSTKSZ;
     ss.ss_flags = 0;
     if (!ss.ss_sp)

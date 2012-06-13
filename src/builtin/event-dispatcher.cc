@@ -61,14 +61,14 @@ Event_dispatcher::configure()
     namespace pt = boost::property_tree;
     const list<Event_name>& events = ctxt->get_config_list("events");
 
-    BOOST_FOREACH (const Event_name& event_name, events)
+    BOOST_FOREACH(const Event_name& event_name, events)
     {
         const list<Component_name>& component_list =
             ctxt->get_config_list("events." + event_name);
         int order = 0;
         // for every component under the event
         Component_priority component_priority;
-        BOOST_FOREACH (const Component_name& component_name, component_list)
+        BOOST_FOREACH(const Component_name& component_name, component_list)
         {
             // add the priority to the dictionary
             component_priority[component_name] = order++;
@@ -176,7 +176,7 @@ Event_dispatcher::dispatch(const Event& event) const
     if (it != call_chain_map.end())
     {
         const Call_chain& call_chain = it->second;
-        BOOST_FOREACH (const Event_handler_wrapper& ehw, call_chain)
+        BOOST_FOREACH(const Event_handler_wrapper& ehw, call_chain)
         {
             try
             {

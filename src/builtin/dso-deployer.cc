@@ -36,13 +36,13 @@ static Vlog_module lg("dso-deployer");
 static lt_dlhandle
 open_library(const char* library, const char** error_msg)
 {
-	lt_dlhandle h = 0;
-	lt_dladvise advise;
-	if (!lt_dladvise_init(&advise)
-			&& !lt_dladvise_ext(&advise)
-			&& !lt_dladvise_global(&advise))
-		h = lt_dlopenadvise(library, advise);
-	lt_dladvise_destroy (&advise);
+    lt_dlhandle h = 0;
+    lt_dladvise advise;
+    if (!lt_dladvise_init(&advise)
+        && !lt_dladvise_ext(&advise)
+        && !lt_dladvise_global(&advise))
+        h = lt_dlopenadvise(library, advise);
+    lt_dladvise_destroy(&advise);
     //lt_dlhandle h = lt_dlopenext(library);
     *error_msg = h ? "" : lt_dlerror();
     return h;
@@ -72,14 +72,14 @@ DSO_deployer::DSO_deployer(const Component_context* ctxt,
     }
 
     list<fs::path> description_files;
-    BOOST_FOREACH (string directory, lib_dirs)
+    BOOST_FOREACH(string directory, lib_dirs)
     {
         list<fs::path> results = scan(directory);
         description_files.insert(description_files.end(),
                                  results.begin(), results.end());
     }
 
-    BOOST_FOREACH (fs::path& config_path, description_files)
+    BOOST_FOREACH(fs::path& config_path, description_files)
     {
         try
         {
@@ -87,13 +87,13 @@ DSO_deployer::DSO_deployer(const Component_context* ctxt,
             pt::ptree root;
             pt::read_json(config_path.string(), root);
 
-            BOOST_FOREACH (const pt::ptree::value_type& component, root)
+            BOOST_FOREACH(const pt::ptree::value_type& component, root)
             {
                 const std::string& name = component.first;
                 Component_context* ctxt =
                     new DSO_component_context(name, config_path.string());
                 if (uninstalled_contexts.find(ctxt->get_name()) ==
-                        uninstalled_contexts.end())
+                    uninstalled_contexts.end())
                 {
                     uninstalled_contexts[ctxt->get_name()] = ctxt;
                     VLOG_DBG(lg, "Component '%s' scanned.", ctxt->get_name().c_str());
@@ -171,7 +171,7 @@ DSO_deployer::get_search_paths() const
 }
 
 DSO_component_context::DSO_component_context(const Component_name& name,
-        const std::string& config_path)
+                                             const std::string& config_path)
     : Component_context(name, config_path)
 {
     using namespace boost;
@@ -190,8 +190,8 @@ DSO_component_context::DSO_component_context(const Component_name& name,
 
     if (has("dependencies"))
     {
-        BOOST_FOREACH (const std::string& dependency,
-                       get_config_list("dependencies"))
+        BOOST_FOREACH(const std::string& dependency,
+                      get_config_list("dependencies"))
         {
             dependencies.push_back(new Name_dependency(dependency));
         }
@@ -221,7 +221,7 @@ DSO_component_context::load()
         handle = open_library(
                      (home_path / ".libs" / library).string().c_str(),
                      &error_msg);
-        error = "'" + error + "' or '"+demangle_undefined_symbol(error_msg)+"'";
+        error = "'" + error + "' or '" + demangle_undefined_symbol(error_msg) + "'";
     }
 
     if (!handle)

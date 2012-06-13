@@ -83,7 +83,7 @@ void
 Connection_manager::install()
 {
     /* Bind/listen to interfaces */
-    BOOST_FOREACH (const std::string& interface, interfaces)
+    BOOST_FOREACH(const std::string& interface, interfaces)
     {
         Conn_t type;
         std::string host, key, cert, cafile;
@@ -94,7 +94,7 @@ Connection_manager::install()
         if (port_map.find(port) == port_map.end()) {
             std::stringstream ss;
             ss << "Port number \"" << port
-        	    << "\" not defined in the configuration file.";
+                << "\" not defined in the configuration file.";
             throw std::runtime_error(ss.str());
         }
         Protocol_name pname = port_map[port];
@@ -106,7 +106,7 @@ Connection_manager::install()
         {
            VLOG_DBG(lg, "-->%s", handler_component_name.c_str());
             throw std::runtime_error("No handler for the \"" + pname
-        	    + "\" protocol.");
+                + "\" protocol.");
         }
         */
         if (type == TCP || type == SSL)
@@ -273,7 +273,7 @@ Connection_manager::connect(Conn_t type,
         boost::shared_ptr<ssl_socket> socket(new ssl_socket(io, ssl_context));
         socket->lowest_layer().async_connect(peer,
                                              boost::bind(&Connection_manager::handle_handshake,
-                                                     this, bassl::stream_base::client, socket, cb, _1));
+                                                         this, bassl::stream_base::client, socket, cb, _1));
     }
     else if (type == TCP)
     {
@@ -339,7 +339,7 @@ Connection_manager::listen(Conn_t type,
 
     baip::address bind_address(baip::address::from_string(bind_ip));
     boost::shared_ptr<baip::tcp::acceptor> acceptor(new baip::tcp::acceptor(
-                io, baip::tcp::endpoint(bind_address, port)));
+                                                        io, baip::tcp::endpoint(bind_address, port)));
 
     if (type == PSSL)
     {

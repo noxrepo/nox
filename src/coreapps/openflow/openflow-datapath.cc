@@ -82,19 +82,16 @@ Openflow_datapath::Openflow_datapath(Openflow_manager& mgr)
       tx_buf_pending(new ba::streambuf(4 * 1024 * 1024)),
       oa(new network_oarchive(*tx_buf_pending)),
       oa_active(new network_oarchive(*tx_buf_active)),
-	  ia(*rx_buf),
+      ia(*rx_buf),
       is_sending(false)
 {
     /*
-    manager.register_handler("ofp_echo_request",
-    		boost::bind(&Openflow_datapath::handle_echo_request,
-    		shared_from_this(), _1));
     manager.register_handler("ofp_error_msg",
-    		boost::bind(&Openflow_datapath::handle_error_msg, shared_from_this(), _1));
+            boost::bind(&Openflow_datapath::handle_error_msg, shared_from_this(), _1));
     manager.register_handler("ofp_features_reply",
-    		boost::bind(&Openflow_datapath::handle_handshake, shared_from_this(), _1));
+            boost::bind(&Openflow_datapath::handle_handshake, shared_from_this(), _1));
     manager.register_handler("ofp_hello",
-    		boost::bind(&Openflow_datapath::handle_handshake, shared_from_this(), _1));
+            boost::bind(&Openflow_datapath::handle_handshake, shared_from_this(), _1));
     */
 }
 
@@ -182,8 +179,8 @@ Openflow_datapath::send_cb(const size_t& bytes_transferred)
 
     if (tx_buf_active->size() == 0 && tx_buf_pending->size() > 0) {
         tx_buf_active.swap(tx_buf_pending);
-		oa.swap(oa_active);
-	}
+        oa.swap(oa_active);
+    }
 
     if (tx_buf_active->size() > 0)
         connection->send(*tx_buf_active);
@@ -194,17 +191,18 @@ Openflow_datapath::send_cb(const size_t& bytes_transferred)
 void
 Openflow_datapath::send(const v1::ofp_msg* msg)
 {
+    VLOG_DBG(lg, "sending %s", msg->name());
     assert(msg->length() <= v1::OFP_MAX_MSG_BYTES);
 
-	const_cast<v1::ofp_msg*>(msg)->factory(*oa, NULL);
+    const_cast<v1::ofp_msg*>(msg)->factory(*oa, NULL);
 
     if (is_sending)
         return;
 
     if (tx_buf_active->size() == 0 && tx_buf_pending->size() > 0) {
         tx_buf_active.swap(tx_buf_pending);
-		oa.swap(oa_active);
-	}
+        oa.swap(oa_active);
+    }
 
     if (tx_buf_active->size() > 0)
     {
@@ -216,6 +214,7 @@ Openflow_datapath::send(const v1::ofp_msg* msg)
 void
 Openflow_datapath::handle_message(const v1::ofp_msg* msg)
 {
+    VLOG_DBG(lg, "received %s", msg->name());
     Openflow_event ofe(*this, msg);
     switch (datapath_state)
     {
@@ -246,16 +245,6 @@ Openflow_datapath::handle_disconnect(const Event& e)
     header_set = false;
     hello_received = false;
     features_req_sent = false;
-    return STOP;
-}
-
-Disposition
-Openflow_datapath::handle_echo_request(const Event& e)
-{
-    /*
-    auto ofe = assert_cast<const Openflow_event&>(e);
-    auto oer = assert_cast<const v1::ofp_echo_request*>(ofe.msg);
-    */
     return STOP;
 }
 
@@ -293,10 +282,10 @@ Openflow_datapath::handle_handshake(const Event& e)
         features = *ofr;
         id_ = datapathid::from_host(features.datapath_id());
 
-		// TODO: fix this
-		datapath_state = CONNECTED;
-		Openflow_datapath_join_event dpje(shared_from_this());
-		manager.dispatch(dpje);
+        // TODO: fix this
+        datapath_state = CONNECTED;
+        Openflow_datapath_join_event dpje(shared_from_this());
+        manager.dispatch(dpje);
     }
     else if (type == v1::ofp_msg::OFPT_HELLO)
     {
@@ -344,7 +333,7 @@ Openflow_datapath::check_idle(const bs::error_code& ec)
     {
         if (state == CONNECTED)
         {
-            VLOG_DBG(lg,"%s: Idle %d seconds, sending inactivity probe",
+            VLOG_DBG(lg, "%s: Idle %d seconds, sending inactivity probe",
                      to_string().c_str(), probe_interval);
             idle_timer.reset();
             send_echo_request(boost::bind(&Connection::transit_to,

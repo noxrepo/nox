@@ -145,7 +145,7 @@ inline std::string
 datapathid::string() const
 {
     char buf[24];
-    sprintf(buf, "%012"PRIx64, as_host());
+    sprintf(buf, "%012" PRIx64, as_host());
     return buf;
 }
 

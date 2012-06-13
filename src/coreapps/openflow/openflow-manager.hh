@@ -46,7 +46,7 @@ public:
 
 private:
     typedef boost::unordered_map<datapathid, boost::shared_ptr<Openflow_datapath> >
-		Datapath_map;
+    Datapath_map;
     typedef std::set<boost::shared_ptr<Openflow_datapath> > Datapath_set;
 
     Datapath_map connected_dps;
@@ -60,6 +60,7 @@ private:
     Disposition handle_new_connection(const Event&);
     Disposition handle_datapath_join(const Event&);
     Disposition handle_datapath_leave(const Event&);
+    Disposition handle_echo_request(const Event&);
 };
 
 } // namespace openflow

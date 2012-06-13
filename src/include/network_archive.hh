@@ -1,6 +1,8 @@
 #ifndef NETWORK_ARCHIVE_HH
 #define NETWORK_ARCHIVE_HH
 
+#include <byteswap.h>
+
 #include <boost/config.hpp>
 #include <boost/static_assert.hpp>
 
@@ -23,16 +25,16 @@ enum network_archive_flags
 };
 
 inline void
-reverse_bytes(char size, char *address)
+reverse_bytes(char size, char* address)
 {
-	char * first = address;
-	char * last = first + size - 1;
-	for(; first < last; ++first, --last)
-	{
-		char x = *last;
-		*last = *first;
-		*first = x;
-	}
+    char* first = address;
+    char* last = first + size - 1;
+    for (; first < last; ++first, --last)
+    {
+        char x = *last;
+        *last = *first;
+        *first = x;
+    }
 }
 
 } // namespace vigil

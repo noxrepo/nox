@@ -133,7 +133,7 @@ Component_context::Component_context(const Component_name& name,
                 std::vector<std::string> args;
                 // use comma as the separator
                 boost::split(args, arg, boost::is_any_of(","));
-                BOOST_FOREACH (const std::string& str, args)
+                BOOST_FOREACH(const std::string& str, args)
                 {
                     std::string key("args.");
                     // use comma as the separator
@@ -173,7 +173,7 @@ Component_context::uninstall(const Component_state to_state)
 bool
 Component_context::resolve_dependencies(Component_state state)
 {
-    BOOST_FOREACH (Dependency* d, dependencies)
+    BOOST_FOREACH(Dependency* d, dependencies)
     {
         if (!d->resolve(state))
         {
@@ -295,14 +295,14 @@ const
     }
 
     if (ctxts_visited.find(const_cast<Component_context*>(this)) !=
-            ctxts_visited.end())
+        ctxts_visited.end())
     {
         return "A circular component dependency detected.";
     }
 
     ctxts_visited.insert(const_cast<Component_context*>(this));
 
-    BOOST_FOREACH (Dependency* d, dependencies)
+    BOOST_FOREACH(Dependency* d, dependencies)
     {
         string err = d->get_error_message(ctxts_visited);
         if (err != "")
@@ -325,7 +325,7 @@ Component_context::get_config_list(const std::string& key) const
 {
     const pt::ptree& pt = properties.get_child(key);
     std::list<std::string> l;
-    BOOST_FOREACH (const pt::ptree::value_type& item, pt)
+    BOOST_FOREACH(const pt::ptree::value_type& item, pt)
     {
         l.push_back(item.first);
     }
@@ -340,7 +340,7 @@ Component_context::has(const std::string& key) const
         properties.get_child(key);
         return true;
     }
-    catch(...)
+    catch (...)
     {
         return false;
     }

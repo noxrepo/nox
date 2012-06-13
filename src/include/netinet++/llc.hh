@@ -42,7 +42,7 @@ struct Llc
     uint8_t  dsap;     // Destination sap
     uint8_t  ssap;     // Source sap
     uint8_t  ctrl;     // Control
-} __attribute__ ((__packed__));
+} __attribute__((__packed__));
 
 
 inline

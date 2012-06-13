@@ -31,6 +31,7 @@
 #include <boost/timer.hpp>
 
 #include "assert.hh"
+#include "openflow-1.0.hh"
 #include "openflow-datapath-join-event.hh"
 #include "openflow-datapath-leave-event.hh"
 #include "openflow-event.hh"
@@ -126,6 +127,8 @@ Openflow_manager::register_default_handlers()
         boost::bind(&Openflow_manager::handle_datapath_join, this, _1));
     register_handler<Openflow_datapath_leave_event>(
         boost::bind(&Openflow_manager::handle_datapath_leave, this, _1));
+    register_handler("ofp_echo_request",
+                     boost::bind(&Openflow_manager::handle_echo_request, this, _1));
 }
 
 Disposition
@@ -140,7 +143,7 @@ Openflow_manager::handle_shutdown(const Event& e)
     {
         conn.second->close();
     }
-	return CONTINUE;
+    return CONTINUE;
 }
 
 Disposition
@@ -149,7 +152,7 @@ Openflow_manager::handle_new_connection(const Event& e)
     auto nce = assert_cast<const New_connection_event&>(e);
     boost::shared_ptr<Openflow_datapath> dp(new Openflow_datapath(*this));
     dp->set_connection(nce.connection);
-	boost::lock_guard<boost::mutex> lock(dp_mutex);
+    boost::lock_guard<boost::mutex> lock(dp_mutex);
     connecting_dps.insert(dp);
     return CONTINUE;
 }
@@ -157,8 +160,8 @@ Openflow_manager::handle_new_connection(const Event& e)
 Disposition
 Openflow_manager::handle_datapath_join(const Event& e)
 {
-	auto dje = assert_cast<const Openflow_datapath_join_event&>(e);
-	boost::lock_guard<boost::mutex> lock(dp_mutex);
+    auto dje = assert_cast<const Openflow_datapath_join_event&>(e);
+    boost::lock_guard<boost::mutex> lock(dp_mutex);
     connecting_dps.erase(dje.dp);
     connected_dps[dje.dp->id()] = dje.dp;
     return CONTINUE;
@@ -167,10 +170,20 @@ Openflow_manager::handle_datapath_join(const Event& e)
 Disposition
 Openflow_manager::handle_datapath_leave(const Event& e)
 {
-	auto dle = assert_cast<const Openflow_datapath_leave_event&>(e);
-	boost::lock_guard<boost::mutex> lock(dp_mutex);
+    auto dle = assert_cast<const Openflow_datapath_leave_event&>(e);
+    boost::lock_guard<boost::mutex> lock(dp_mutex);
     connected_dps.erase(dle.dp->id());
     return CONTINUE;
+}
+
+Disposition
+Openflow_manager::handle_echo_request(const Event& e)
+{
+    auto ofe = assert_cast<const Openflow_event&>(e);
+    auto req = assert_cast<const v1::ofp_echo_request*>(ofe.msg);
+    v1::ofp_echo_reply rep(*req);
+    ofe.dp.send(&rep);
+    return STOP;
 }
 
 REGISTER_COMPONENT(Simple_component_factory<Openflow_manager>, Openflow_manager);

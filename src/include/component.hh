@@ -59,7 +59,7 @@ enum Component_state
     CONFIGURED = 5,           /* Component's configure() has been called. */
     INSTALLED = 6,            /* Component's install() has been called. */
     ERROR = 7                 /* Any state transition can lead to error state,
-				 if an unrecovarable error is occurs. */
+                                 if an unrecovarable error is occurs. */
 };
 
 const std::string Component_state_string[] =
@@ -354,15 +354,15 @@ private:
 #endif
 
 /* Register components implemented as dynamic libraries */
-#define REGISTER_COMPONENT(COMPONENT_FACTORY, COMPONENT_CLASS)         	\
-	extern "C"                                                      \
-	vigil::Component_factory*                               	\
-	__COMPONENT_FACTORY_FUNCTION__() {                              \
-		static vigil::Interface_description                 	\
-		    i(typeid(COMPONENT_CLASS).name());                  \
-		static COMPONENT_FACTORY f(i);                          \
-		return &f;                                              \
-	}
+#define REGISTER_COMPONENT(COMPONENT_FACTORY, COMPONENT_CLASS)  \
+    extern "C"                                                  \
+    vigil::Component_factory*                                   \
+    __COMPONENT_FACTORY_FUNCTION__() {                          \
+        static vigil::Interface_description                     \
+        i(typeid(COMPONENT_CLASS).name());                      \
+        static COMPONENT_FACTORY f(i);                          \
+        return &f;                                              \
+    }
 
 } // namespace vigil
 

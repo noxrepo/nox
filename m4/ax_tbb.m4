@@ -26,7 +26,7 @@ AC_DEFUN([AX_TBB], [
             fi
             # no such luck; use some default tbbdirs
             if ! $found; then
-                tbbdirs="/usr/local/tbb /usr/lib/tbb /usr/tbb /usr/pkg /usr/local /usr"
+                tbbdirs="/usr /usr/local /opt /opt/local"
             fi
         ]
     )

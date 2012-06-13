@@ -45,7 +45,7 @@ struct cidr_ipaddr
     bool operator != (const cidr_ipaddr&) const;
 
 private:
-    void set_mask(const char *slash);
+    void set_mask(const char* slash);
 
 }; // -- struct cidr_ipaddr
 
@@ -70,9 +70,9 @@ cidr_ipaddr::cidr_ipaddr(const ipaddr& ip, uint8_t mask_bit_len)
 
 inline
 void
-cidr_ipaddr::set_mask(const char *slash)
+cidr_ipaddr::set_mask(const char* slash)
 {
-    const char *start = slash+1;
+    const char* start = slash + 1;
     while (*start != '\0')
     {
         if (!isdigit(*(start++)))
@@ -80,11 +80,11 @@ cidr_ipaddr::set_mask(const char *slash)
             throw bad_ipaddr_cast();
         }
     }
-    if (start == slash+1)
+    if (start == slash + 1)
     {
         throw bad_ipaddr_cast();
     }
-    int len = atoi(slash+1);
+    int len = atoi(slash + 1);
     if (len > 32)
     {
         throw bad_ipaddr_cast();
@@ -102,7 +102,7 @@ cidr_ipaddr::set_mask(const char *slash)
 inline
 cidr_ipaddr::cidr_ipaddr(const char* cidr_str)
 {
-    const char *slash = strchr(cidr_str, '/');
+    const char* slash = strchr(cidr_str, '/');
 
     if (slash)
     {
@@ -165,7 +165,7 @@ cidr_ipaddr::fill_string(std::string& in) const
 #endif
         snprintf(buf, 4, "%"PRIu32"", get_prefix_len());
     assert(ret < 4);
-    in = addr.string() +'/' + buf;
+    in = addr.string() + '/' + buf;
 }
 
 

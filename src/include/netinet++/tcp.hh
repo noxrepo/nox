@@ -69,11 +69,11 @@ struct tcp
     uint32_t ack;               // acknowledgement number
 
 #  if __BYTE_ORDER == __LITTLE_ENDIAN
-    uint8_t x2:4;               // (unused)
-    uint8_t off:4;              // data offset
+    uint8_t x2: 4;              // (unused)
+    uint8_t off: 4;             // data offset
 #  elif __BYTE_ORDER == __BIG_ENDIAN
-    uint8_t off:4;              // data offset
-    uint8_t x2:4;               // (unused)
+    uint8_t off: 4;             // data offset
+    uint8_t x2: 4;              // (unused)
 #  else
 #  error " BYTE ORDERING not specified "
 #  endif
@@ -90,12 +90,12 @@ struct tcp
 
     uint8_t* data();
 
-    static uint16_t checksum(ipaddr sip, ipaddr dip, void *tcp,
+    static uint16_t checksum(ipaddr sip, ipaddr dip, void* tcp,
                              uint16_t tcp_len);
     uint16_t        calc_csum(ipaddr sip, ipaddr dip, uint16_t datalen);
     //TODO: versions for IPv6
 
-} __attribute__ ((__packed__)); // -- struct tcp
+} __attribute__((__packed__));  // -- struct tcp
 //-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
@@ -122,10 +122,10 @@ tcp::calc_csum(ipaddr sip, ipaddr dip, uint16_t datalen)
 
 inline
 uint16_t
-tcp::checksum(ipaddr sip, ipaddr dip, void *tcp, uint16_t tcp_len)
+tcp::checksum(ipaddr sip, ipaddr dip, void* tcp, uint16_t tcp_len)
 {
     uint32_t sum = 0;
-    uint16_t *data = (uint16_t*)tcp;
+    uint16_t* data = (uint16_t*)tcp;
 
     sum += (uint16_t)(sip.addr >> 16);
     sum += (uint16_t)sip.addr;
@@ -133,7 +133,7 @@ tcp::checksum(ipaddr sip, ipaddr dip, void *tcp, uint16_t tcp_len)
     sum += (uint16_t)dip.addr;
     sum += htons(0x0006); //proto
     sum += htons(tcp_len);
-    while(tcp_len > 1)
+    while (tcp_len > 1)
     {
         sum += *data++;
         tcp_len -= sizeof(uint16_t);

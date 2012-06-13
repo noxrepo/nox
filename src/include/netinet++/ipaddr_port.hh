@@ -34,10 +34,10 @@ struct ipaddr_port
     ipaddr_port(const std::string&, const uint16_t);
 
     std::string string() const;
-    operator std::string () const;
+    operator std::string() const;
 
     bool operator == (const ipaddr_port&) const;
-} __attribute__ ((__packed__)); // -- struct ipaddr_port
+} __attribute__((__packed__));  // -- struct ipaddr_port
 
 inline
 ipaddr_port::ipaddr_port() : addr(), port(0) { }

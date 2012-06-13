@@ -27,9 +27,11 @@ nox_core_SOURCES =                          \
 
 CLEANFILES =
 
+nox_core_CPPFLAGS =                         \
+    $(AM_CPPFLAGS)
+
 nox_core_LDFLAGS =                          \
-    $(AM_LDFLAGS) $(BOOST_LDFLAGS) -Wl,-E   \
-    -dlopen force
+    $(AM_LDFLAGS) -dlopen force
 
 nox_core_LDADD =                            \
     $(LDADD)                                \

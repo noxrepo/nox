@@ -72,7 +72,7 @@ Vlog::get_level_name(Level level)
 }
 
 Vlog::Level
-Vlog::get_level_val(const char *name)
+Vlog::get_level_val(const char* name)
 {
     for (Level level = (Level) 0; level < N_LEVELS; level = level + 1)
     {
@@ -81,7 +81,7 @@ Vlog::get_level_val(const char *name)
             return level;
         }
     }
-    return (Level) -1;
+    return (Level) - 1;
 }
 
 static const char* facility_names[Vlog::N_LEVELS] =
@@ -157,7 +157,7 @@ Vlog_impl::min_loggable_level(Vlog::Module module)
 
     Vlog::Level min_level = Vlog::LEVEL_EMER;
     for (Vlog::Facility facility = 0; facility < Vlog::N_FACILITIES;
-            ++facility)
+         ++facility)
     {
         min_level = std::max(min_level, levels[facility][module]);
     }
@@ -177,7 +177,7 @@ Vlog_impl::revalidate_cache_entry(const Cache_map::value_type& entry)
 void
 Vlog_impl::revalidate_cache()
 {
-    BOOST_FOREACH (const Cache_map::value_type& entry, min_level_caches)
+    BOOST_FOREACH(const Cache_map::value_type& entry, min_level_caches)
     {
         revalidate_cache_entry(entry);
     }
@@ -193,7 +193,7 @@ Vlog::get_module_name(Module module)
 Vlog::Module
 Vlog::get_module_val(const char* name, bool create)
 {
-    std::string short_name = std::string(name).substr(0,MAX_MODULE_NAME_LEN);
+    std::string short_name = std::string(name).substr(0, MAX_MODULE_NAME_LEN);
     Name_to_module::iterator i = pimpl->name_to_module.find(short_name);
     if (i == pimpl->name_to_module.end())
     {
@@ -299,7 +299,7 @@ Vlog::Vlog()
 
     // Init socket to forward log msgs
     hSock = socket(AF_INET, SOCK_DGRAM, 0);
-    struct hostent *pServer = gethostbyname("localhost");
+    struct hostent* pServer = gethostbyname("localhost");
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     memcpy(&addr.sin_addr.s_addr, pServer->h_addr, pServer->h_length);
@@ -313,7 +313,7 @@ Vlog::~Vlog()
 }
 
 void
-Vlog::log(Module module, Level level, const char *format, ...)
+Vlog::log(Module module, Level level, const char* format, ...)
 {
     if (!is_loggable(module, level))
     {
@@ -356,9 +356,9 @@ Vlog::set_levels_from_string(const std::string& str)
 
     typedef tokenizer<char_separator<char> > charseptok;
 
-    charseptok tok(str,sepwhite);
+    charseptok tok(str, sepwhite);
 
-    for(charseptok::iterator beg = tok.begin(); beg != tok.end(); ++beg)
+    for (charseptok::iterator beg = tok.begin(); beg != tok.end(); ++beg)
     {
         charseptok curmod(*beg, sepcol);
 
@@ -379,7 +379,7 @@ Vlog::set_levels_from_string(const std::string& str)
         }
 
         /* Parse facility. */
-        iter_inc_throw_on_end(curmod, moditer, "invalid token "+*beg, false);
+        iter_inc_throw_on_end(curmod, moditer, "invalid token " + *beg, false);
         Facility facility;
         if (*moditer == "ANY")
         {
@@ -395,13 +395,13 @@ Vlog::set_levels_from_string(const std::string& str)
         }
 
         /* Parse level. */
-        iter_inc_throw_on_end(curmod, moditer, "invalid token "+*beg, false);
+        iter_inc_throw_on_end(curmod, moditer, "invalid token " + *beg, false);
         Level level = get_level_val((*moditer).c_str());
         if (level == -1)
         {
             return "unknown level " + *moditer;
         }
-        iter_inc_throw_on_end(curmod, moditer, "invalid token "+*beg, true);
+        iter_inc_throw_on_end(curmod, moditer, "invalid token " + *beg, true);
 
         /* Set level. */
         set_levels(facility, module, level);
@@ -415,7 +415,7 @@ Vlog::get_levels()
     std::string levels;
     levels += "                 console    syslog\n";
     levels += "                 -------    ------\n";
-    for (size_t i=0; i < pimpl->n_modules() ; i++)
+    for (size_t i = 0; i < pimpl->n_modules() ; i++)
     {
         string_printf(
             levels,
@@ -453,7 +453,7 @@ Vlog::output(Module module, Level level, const char* log_msg)
            : level == LEVEL_WARN ? LOG_WARNING
            : level == LEVEL_INFO ? LOG_INFO
            : LOG_DEBUG);
-        if(strlen(log_msg) < MAX_MSG_LEN)
+        if (strlen(log_msg) < MAX_MSG_LEN)
         {
             ::syslog(priority, "%05d|%s:%s %s",
                      pimpl->msg_num, module_name, level_name, log_msg);
@@ -465,7 +465,7 @@ Vlog::output(Module module, Level level, const char* log_msg)
             // Do this in a separate branch to avoid copies on short log messages
             std::string long_str = std::string(log_msg);
             int start_index = 0;
-            while(start_index < long_str.length())
+            while (start_index < long_str.length())
             {
                 std::string sub = long_str.substr(start_index, MAX_MSG_LEN);
                 ::syslog(priority, "%05d|%s:%s %s",
@@ -477,8 +477,8 @@ Vlog::output(Module module, Level level, const char* log_msg)
 
     // Send log msg to gui socket
     char pWrite[MAX_MSG_LEN];
-    snprintf(pWrite, MAX_MSG_LEN, "%05d|%s|%s:%s\n",pimpl->msg_num,module_name,level_name,log_msg);
-    sendto(hSock,pWrite,strlen(pWrite),0,(sockaddr*)&addr,sizeof(addr));
+    snprintf(pWrite, MAX_MSG_LEN, "%05d|%s|%s:%s\n", pimpl->msg_num, module_name, level_name, log_msg);
+    sendto(hSock, pWrite, strlen(pWrite), 0, (sockaddr*)&addr, sizeof(addr));
 
     /* Restore errno (it's pretty unfriendly for a log function to change
      * errno). */
@@ -520,7 +520,7 @@ Vlog::unregister_cache(Level* cached_min_level)
         errno = save_errno;                             \
     }
 
-Vlog_module::Vlog_module(const char *module_name)
+Vlog_module::Vlog_module(const char* module_name)
     : module(vlog().get_module_val(module_name))
 {
     vlog().register_cache(module, &cached_min_level);
@@ -531,32 +531,32 @@ Vlog_module::~Vlog_module()
     vlog().unregister_cache(&cached_min_level);
 }
 
-void Vlog_module::emer(const char *format, ...)
+void Vlog_module::emer(const char* format, ...)
 {
     VLOG_MODULE_DO_LOG(Vlog::LEVEL_EMER);
 }
 
-void Vlog_module::err(const char *format, ...)
+void Vlog_module::err(const char* format, ...)
 {
     VLOG_MODULE_DO_LOG(Vlog::LEVEL_ERR);
 }
 
-void Vlog_module::warn(const char *format, ...)
+void Vlog_module::warn(const char* format, ...)
 {
     VLOG_MODULE_DO_LOG(Vlog::LEVEL_WARN);
 }
 
-void Vlog_module::info(const char *format, ...)
+void Vlog_module::info(const char* format, ...)
 {
     VLOG_MODULE_DO_LOG(Vlog::LEVEL_INFO);
 }
 
-void Vlog_module::dbg(const char *format, ...)
+void Vlog_module::dbg(const char* format, ...)
 {
     VLOG_MODULE_DO_LOG(Vlog::LEVEL_DBG);
 }
 
-void Vlog_module::log(int level, const char *format, ...)
+void Vlog_module::log(int level, const char* format, ...)
 {
     VLOG_MODULE_DO_LOG(level);
 }

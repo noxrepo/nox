@@ -6,7 +6,7 @@ OPENFLOW_LIB_VERSION = 1:0:0
 OPENFLOW_MANAGER_VERSION = 1:0:0
 
 EXTRA_DIST =                                    \
-	meta.json
+    meta.json
 
 #lib_LTLIBRARIES = libopenflow.la
 
@@ -35,9 +35,9 @@ openflow_manager_la_SOURCES =                   \
     openflow-manager.cc                         \
     openflow-datapath.hh                        \
     openflow-datapath.cc                        \
-	openflow-datapath-join-event.hh             \
-	openflow-datapath-leave-event.hh            \
-	openflow-event.hh                           \
+    openflow-datapath-join-event.hh             \
+    openflow-datapath-leave-event.hh            \
+    openflow-event.hh                           \
     openflow-1.0.hh                             \
     openflow-inl-1.0.hh                         \
     openflow-defs-1.0.hh                        \

@@ -141,10 +141,10 @@ Stream_connection<Async_stream>::send(const ba::streambuf& buf)
 {
     stream->async_write_some(buf.data(),
                              make_custom_alloc_handler(tx_allocator_,
-                                     strand.wrap(boost::bind(&Stream_connection::handle_send,
-                                             shared_from_this(),
-                                             ba::placeholders::error,
-                                             ba::placeholders::bytes_transferred))));
+                                                       strand.wrap(boost::bind(&Stream_connection::handle_send,
+                                                               shared_from_this(),
+                                                               ba::placeholders::error,
+                                                               ba::placeholders::bytes_transferred))));
 }
 
 template <typename Async_stream>
@@ -152,24 +152,24 @@ void
 Stream_connection<Async_stream>::recv(ba::mutable_buffers_1 buf)
 {
     /*if (stream->lowest_layer().available() > 0) {
-    	bs::error_code ec;
-    	size_t bytes_transferred =
-    		stream->read_some(buf.prepare(buf.max_size() - buf.size()), ec);
-    	handle_recv(ec, bytes_transferred);
+        bs::error_code ec;
+        size_t bytes_transferred =
+            stream->read_some(buf.prepare(buf.max_size() - buf.size()), ec);
+        handle_recv(ec, bytes_transferred);
     } else {*/
     stream->async_read_some(buf,
                             make_custom_alloc_handler(rx_allocator_,
-                                    strand.wrap(boost::bind(&Stream_connection<Async_stream>::handle_recv,
-                                            shared_from_this(),
-                                            ba::placeholders::error,
-                                            ba::placeholders::bytes_transferred))));
+                                                      strand.wrap(boost::bind(&Stream_connection<Async_stream>::handle_recv,
+                                                              shared_from_this(),
+                                                              ba::placeholders::error,
+                                                              ba::placeholders::bytes_transferred))));
     //}
 }
 
 template <typename Async_stream>
 void
 Stream_connection<Async_stream>::handle_recv(const bs::error_code& ec,
-        const size_t& bytes_transferred)
+                                             const size_t& bytes_transferred)
 {
     if (ec)
     {
@@ -197,7 +197,7 @@ Stream_connection<Async_stream>::handle_recv(const bs::error_code& ec,
 template <typename Async_stream>
 void
 Stream_connection<Async_stream>::handle_send(const bs::error_code& ec,
-        const size_t& bytes_transferred)
+                                             const size_t& bytes_transferred)
 {
     if (ec)
     {

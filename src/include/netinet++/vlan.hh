@@ -49,14 +49,14 @@ struct vlan
 
     uint8_t* data();
 
-} __attribute__ ((__packed__));
+} __attribute__((__packed__));
 
 //-----------------------------------------------------------------------------
 inline
 uint16_t
 vlan::id() const
 {
-    return ( ntohs(tci) & VID_MASK);
+    return (ntohs(tci) & VID_MASK);
 }
 //-----------------------------------------------------------------------------
 
@@ -65,7 +65,7 @@ inline
 uint8_t
 vlan::pcp() const
 {
-    return ( (ntohs(tci) & PCP_MASK) >> PCP_SHIFT);
+    return ((ntohs(tci) & PCP_MASK) >> PCP_SHIFT);
 }
 //-----------------------------------------------------------------------------
 

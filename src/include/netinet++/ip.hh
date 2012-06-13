@@ -139,10 +139,10 @@ struct ip_
     // ------------------------------------------------------------------------
 
     uint16_t        calc_csum();
-    static uint16_t checksum(void *, size_t);
+    static uint16_t checksum(void*, size_t);
 
-    uint16_t  ihl:4;
-    uint16_t  ver:4;
+    uint16_t  ihl: 4;
+    uint16_t  ver: 4;
     uint8_t   tos;
     uint16_t  tot_len;
     uint16_t  id;
@@ -159,7 +159,7 @@ struct ip_
 
     uint8_t* data();
 
-} __attribute__ ((__packed__));
+} __attribute__((__packed__));
 //-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
@@ -207,7 +207,7 @@ ip_::calc_csum()
 {
     uint16_t oldsum = csum;
     csum = 0;
-    uint16_t newsum = checksum(this, ihl*4);
+    uint16_t newsum = checksum(this, ihl * 4);
     csum = oldsum;
     return newsum;
 }
@@ -218,10 +218,10 @@ ip_::calc_csum()
 //-----------------------------------------------------------------------------
 inline
 uint16_t
-ip_::checksum(void * in, size_t size)
+ip_::checksum(void* in, size_t size)
 {
     register size_t nleft = size;
-    const u_short *w = (u_short *) in;
+    const u_short* w = (u_short*) in;
     register u_short answer;
     register int sum = 0;
 
@@ -233,7 +233,7 @@ ip_::checksum(void * in, size_t size)
 
     if (nleft == 1)
     {
-        sum += htons(*(u_char *) w << 8);
+        sum += htons(*(u_char*) w << 8);
     }
 
     sum = (sum >> 16) + (sum & 0xffff); // add high 16 to low 16
@@ -277,7 +277,7 @@ const char*
 ip_::c_string() const
 {
     static char buf[256];
-    ::strncpy(buf,this->string().c_str(), 256);
+    ::strncpy(buf, this->string().c_str(), 256);
     return buf;
 }
 //-----------------------------------------------------------------------------
@@ -294,7 +294,7 @@ ip_::data()
 //-----------------------------------------------------------------------------
 inline
 std::ostream&
-operator <<(std::ostream& os,const ip_& iph)
+operator <<(std::ostream& os, const ip_& iph)
 {
     os << iph.string();
     return os;

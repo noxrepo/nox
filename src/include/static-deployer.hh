@@ -39,7 +39,7 @@ class Static_component_context
     : public Component_context
 {
 public:
-    typedef boost::function<Component*(Component_context*)>
+    typedef boost::function<Component* (Component_context*)>
     Constructor_callback;
 
     Static_component_context(const Constructor_callback&,

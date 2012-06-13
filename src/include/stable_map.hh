@@ -156,7 +156,7 @@ bool Stable_map<Key, Value>::erase(Key key)
 template <class Key, class Value>
 void Stable_map<Key, Value>::purge()
 {
-    for (typename Container::iterator i = c.begin(); i != c.end(); )
+    for (typename Container::iterator i = c.begin(); i != c.end();)
     {
         typename Container::iterator j = i++;
         if (j->second.erased)
@@ -205,7 +205,7 @@ Stable_map<Key, Value>::iterator::operator++(int)
 
 template <class Key, class Value>
 Stable_map<Key, Value>::iterator::iterator(typename Container::iterator i_,
-        typename Container::iterator end_)
+                                           typename Container::iterator end_)
     : i(i_), end(end_)
 {
     skip_erased();

@@ -110,7 +110,7 @@ public:
     {
         return c.empty();
     }
-    bool insert(const Key&,const Value&);
+    bool insert(const Key&, const Value&);
     bool erase(const Key&);
     void purge();
 
@@ -231,7 +231,7 @@ Stable_list<Key, Value>::iterator::operator++(int)
 template <class Key, class Value>
 inline
 Stable_list<Key, Value>::iterator::iterator(const typename Container::iterator& i_,
-        const typename Container::iterator& end_)
+                                            const typename Container::iterator& end_)
     : i(i_), end(end_)
 {
     skip_erased();

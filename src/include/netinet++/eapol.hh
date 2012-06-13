@@ -75,7 +75,7 @@ struct eapol
     std::string type_str();
     static std::string type_str(uint8_t type);
 
-} __attribute__ ((__packed__));
+} __attribute__((__packed__));
 //-----------------------------------------------------------------------------
 
 inline

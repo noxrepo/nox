@@ -39,10 +39,10 @@ class Bitmap
 public:
     Bitmap(size_t sz) : size(sz), data(new uint64_t[_data_len(sz)]) {}
 
-    Bitmap(const Bitmap &other)
+    Bitmap(const Bitmap& other)
         : size(other.size), data(new uint64_t[_data_len(other.size)])
     {
-        memcpy (data, other.data, _data_len(size)*sizeof(uint64_t));
+        memcpy(data, other.data, _data_len(size)*sizeof(uint64_t));
     }
 
     ~Bitmap()
@@ -193,7 +193,7 @@ Bitmap::get_1_indices()
 inline size_t
 Bitmap::_data_len(size_t bitlen)
 {
-    return ROUND_UP(bitlen, PART_BITS)/PART_BITS;
+    return ROUND_UP(bitlen, PART_BITS) / PART_BITS;
 }
 
 inline uint64_t*

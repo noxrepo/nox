@@ -76,7 +76,7 @@ public:
     };
     typedef int Level;
     static const char* get_level_name(Level);
-    static Level get_level_val(const char *name);
+    static Level get_level_val(const char* name);
 
     /* Available destinations for log messages. */
     enum
@@ -192,12 +192,12 @@ public:
     }
 #endif
 
-    void emer(const char *format, ...) PRINTF_FORMAT(2, 3);
-    void err(const char *format, ...) PRINTF_FORMAT(2, 3);
-    void warn(const char *format, ...) PRINTF_FORMAT(2, 3);
-    void info(const char *format, ...) PRINTF_FORMAT(2, 3);
-    void dbg(const char *format, ...) PRINTF_FORMAT(2, 3);
-    void log(int level, const char *format, ...) PRINTF_FORMAT(3, 4);
+    void emer(const char* format, ...) PRINTF_FORMAT(2, 3);
+    void err(const char* format, ...) PRINTF_FORMAT(2, 3);
+    void warn(const char* format, ...) PRINTF_FORMAT(2, 3);
+    void info(const char* format, ...) PRINTF_FORMAT(2, 3);
+    void dbg(const char* format, ...) PRINTF_FORMAT(2, 3);
+    void log(int level, const char* format, ...) PRINTF_FORMAT(3, 4);
 
 #ifndef LOG4CXX_ENABLED
     const Vlog::Module module;

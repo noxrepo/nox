@@ -26,7 +26,7 @@
 
 namespace vigil
 {
-template <class Key,
+template < class Key,
          class Tp,
          class Hash = std::tr1::hash<Key>,
          class Equal = std::equal_to<Key>,
@@ -43,7 +43,7 @@ class hash_map
 
 namespace vigil
 {
-template <class Key,
+template < class Key,
          class Tp,
          class Hash = __gnu_cxx::hash<Key>,
          class Equal = std::equal_to<Key>,

@@ -17,7 +17,7 @@ NX_BUILDNR
 AH_BOTTOM([/* NOX 0.9.1~APPS_ID~beta. */
 #define NOX_VERSION VERSION BUILDNR_SUFFIX])
 
-AM_INIT_AUTOMAKE([tar-ustar])
+AM_INIT_AUTOMAKE([tar-ustar -Wno-portability])
 
 # Checks for programs.
 AC_PROG_CXX

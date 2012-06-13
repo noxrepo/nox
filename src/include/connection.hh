@@ -38,32 +38,32 @@ class handler_allocator
 {
 public:
     handler_allocator()
-	{
-		in_use_ = false;
-	}
+    {
+        in_use_ = false;
+    }
 
     void* allocate(std::size_t size)
     {
-		if (!in_use_ && size < storage_.size)
-		{
-			in_use_ = true;
-			return storage_.address();
-		}
-		return ::operator new(size);
+        if (!in_use_ && size < storage_.size)
+        {
+            in_use_ = true;
+            return storage_.address();
+        }
+        return ::operator new(size);
     }
 
     void deallocate(void* pointer)
     {
-		if (pointer == storage_.address())
-		{
-			in_use_ = false;
-			return;
-		}
-		::operator delete(pointer);
+        if (pointer == storage_.address())
+        {
+            in_use_ = false;
+            return;
+        }
+        ::operator delete(pointer);
     }
 
 private:
-	std::size_t count;
+    std::size_t count;
 
     // Storage space used for handler-based custom memory allocation.
     boost::aligned_storage<1024> storage_;

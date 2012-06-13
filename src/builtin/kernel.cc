@@ -63,14 +63,14 @@ Kernel::Kernel(const std::string& info_file, int argc_, char** argv_)
            that security critical identifier. */
         int fd = open("/dev/urandom", O_RDONLY);
         if (fd == -1 ||
-                ::read(fd, &info.uuid, sizeof(UUID)) != sizeof(UUID))
+            ::read(fd, &info.uuid, sizeof(UUID)) != sizeof(UUID))
         {
             throw runtime_error("Unable to generate a random UUID.");
         }
         info.uuid &= 0x7fffffffffffffffULL;
         ::close(fd);
 
-        VLOG_DBG(lg, "Assigned a new UUID for the container: %"PRIu64, info.uuid);
+        VLOG_DBG(lg, "Assigned a new UUID for the container: %" PRIu64, info.uuid);
     }
 
     /* Increment the counter and save the changes. */

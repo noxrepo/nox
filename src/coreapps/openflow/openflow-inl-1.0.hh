@@ -61,7 +61,7 @@ namespace bs = boost::serialization;
 template<typename T>
 struct has_factory
 {
-	template <typename C> static char test(typeof(&C::factory()));
+    template <typename C> static char test(typeof(&C::factory()));
     template <typename C> static long test(...);
 
 public:
@@ -72,16 +72,16 @@ template <typename Message>
 class serialize_visitor : public boost::static_visitor<void>
 {
 public:
-	serialize_visitor(Message& msg) : msg(msg) {}
-	template <typename Archive>
-	void operator()(Archive& ar) const
-	{
-		//ar & msg;
-		msg.serialize(ar, 0);
-	}
+    serialize_visitor(Message& msg) : msg(msg) {}
+    template <typename Archive>
+    void operator()(Archive& ar) const
+    {
+        //ar & msg;
+        msg.serialize(ar, 0);
+    }
 
 private:
-	Message& msg;
+    Message& msg;
 };
 
 template<class Derived, class Base, class Enable = void>
@@ -90,14 +90,14 @@ struct construct_and_load
     void
     operator()(ofp_archive_type ar, Base* mem, Base& b)
     {
-		if (mem != NULL) {
-			::new(mem)Derived(b);
-			Derived* d = reinterpret_cast<Derived*>(mem);
-			boost::apply_visitor(serialize_visitor<Derived>(*d), ar);
-		} else {
-			Derived& d = reinterpret_cast<Derived&>(b);
-			boost::apply_visitor(serialize_visitor<Derived>(d), ar);
-		}
+        if (mem != NULL) {
+            ::new(mem)Derived(b);
+            Derived* d = reinterpret_cast<Derived*>(mem);
+            boost::apply_visitor(serialize_visitor<Derived>(*d), ar);
+        } else {
+            Derived& d = reinterpret_cast<Derived&>(b);
+            boost::apply_visitor(serialize_visitor<Derived>(d), ar);
+        }
     }
 };
 
@@ -108,13 +108,13 @@ struct construct_and_load
     void
     operator()(ofp_archive_type ar, Base* mem, Base& b)
     {
-		if (mem != NULL) {
-			Derived d(b);
-			d.factory(ar, reinterpret_cast<Derived*>(mem));
-		} else {
-			Derived& d = reinterpret_cast<Derived&>(b);
-			d.factory(ar, NULL);
-		}
+        if (mem != NULL) {
+            Derived d(b);
+            d.factory(ar, reinterpret_cast<Derived*>(mem));
+        } else {
+            Derived& d = reinterpret_cast<Derived&>(b);
+            d.factory(ar, NULL);
+        }
     }
 };
 
@@ -245,10 +245,10 @@ inline void ofp_vendor::init()
 /*
 inline ofp_msg::factory_t ofp_msg::construct(const uint8_t* buf)
 {
-	const uint8_t& type = buf[offsetof(ofp_msg, type_)];
-	const uint16_t* len = reinterpret_cast<const uint16_t*>(buf + offsetof(ofp_msg, length_));
-	const uint16_t length = ntohs(*len);
-	return NULL;
+    const uint8_t& type = buf[offsetof(ofp_msg, type_)];
+    const uint16_t* len = reinterpret_cast<const uint16_t*>(buf + offsetof(ofp_msg, length_));
+    const uint16_t length = ntohs(*len);
+    return NULL;
 }
 */
 inline void ofp_msg::factory(ofp_archive_type ar, ofp_msg* mem)
@@ -267,7 +267,7 @@ inline void ofp_stats_request::factory(ofp_archive_type ar, ofp_stats_request* m
 }
 
 inline void ofp_stats_request::register_factory(uint16_t t,
-        ofp_stats_request::factory_t f)
+                                                ofp_stats_request::factory_t f)
 {
     factory_map[t] = f;
 }
@@ -278,7 +278,7 @@ inline void ofp_stats_reply::factory(ofp_archive_type ar, ofp_stats_reply* mem)
 }
 
 inline void ofp_stats_reply::register_factory(uint16_t t,
-        ofp_stats_reply::factory_t f)
+                                              ofp_stats_reply::factory_t f)
 {
     factory_map[t] = f;
 }
@@ -289,7 +289,7 @@ inline void ofp_vendor_stats_request::factory(ofp_archive_type ar, ofp_vendor_st
 }
 
 inline void ofp_vendor_stats_request::register_factory(uint32_t t,
-        ofp_vendor_stats_request::factory_t f)
+                                                       ofp_vendor_stats_request::factory_t f)
 {
     factory_map[t] = f;
 }
@@ -300,7 +300,7 @@ inline void ofp_vendor_stats_reply::factory(ofp_archive_type ar, ofp_vendor_stat
 }
 
 inline void ofp_vendor_stats_reply::register_factory(uint32_t t,
-        ofp_vendor_stats_reply::factory_t f)
+                                                     ofp_vendor_stats_reply::factory_t f)
 {
     factory_map[t] = f;
 }
@@ -320,7 +320,7 @@ inline void ofp_action_vendor::factory(ofp_archive_type ar, ofp_action_vendor* m
 }
 
 inline void ofp_action_vendor::register_factory(uint32_t t,
-        ofp_action_vendor::factory_t f)
+                                                ofp_action_vendor::factory_t f)
 {
     factory_map[t] = f;
 }
@@ -331,7 +331,7 @@ inline void ofp_queue_prop::factory(ofp_archive_type ar, ofp_queue_prop* mem)
 }
 
 inline void ofp_queue_prop::register_factory(uint16_t t,
-        ofp_queue_prop::factory_t f)
+                                             ofp_queue_prop::factory_t f)
 {
     factory_map[t] = f;
 }
@@ -352,20 +352,20 @@ template<class Archive>
 inline void ofp_packet_out::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_msg>(*this);
-	/*
-	ar & bs::make_binary_object(&buffer_id_, 8);
-	*/
-    ar & buffer_id_;
-    ar & in_port_;
-    ar & actions_len_;
+        ar& bs::base_object<ofp_msg>(*this);
+    /*
+    ar & bs::make_binary_object(&buffer_id_, 8);
+    */
+    ar& buffer_id_;
+    ar& in_port_;
+    ar& actions_len_;
     if (Archive::is_loading::value)
-		actions_.length(actions_len_);
-	ar & actions_;
+        actions_.length(actions_len_);
+    ar& actions_;
 
     uint8_t size = length() - min_bytes() - actions_len_;
     const uint8_t* packet = boost::asio::buffer_cast<const uint8_t*>(packet_buf_);
-    ar & bs::make_binary_object(const_cast<uint8_t*>(packet), size);
+    ar& bs::make_binary_object(const_cast<uint8_t*>(packet), size);
     packet_buf_ = boost::asio::buffer(packet, size);
 }
 
@@ -373,17 +373,17 @@ template<class Archive>
 inline void ofp_action_nw_addr::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_action>(*this);
-    ar & nw_addr_;
+        ar& bs::base_object<ofp_action>(*this);
+    ar& nw_addr_;
 }
 
 template<class Archive>
 inline void ofp_queue_get_config_request::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_msg>(*this);
-    ar & port_;
-    ar & bs::make_binary_object(pad_, sizeof pad_);
+        ar& bs::base_object<ofp_msg>(*this);
+    ar& port_;
+    ar& bs::make_binary_object(pad_, sizeof pad_);
 }
 
 inline uint32_t ofp_phy_port::speed()
@@ -410,97 +410,97 @@ inline uint32_t ofp_phy_port::speed()
 template<class Archive>
 inline void ofp_phy_port::serialize(Archive& ar, const unsigned int)
 {
-    ar & port_no_;
-    ar & hw_addr_;
-    ar & bs::make_binary_object(name_, sizeof name_);
-    ar & config_;
-    ar & state_;
-    ar & curr_;
-    ar & advertised_;
-    ar & supported_;
-    ar & peer_;
+    ar& port_no_;
+    ar& hw_addr_;
+    ar& bs::make_binary_object(name_, sizeof name_);
+    ar& config_;
+    ar& state_;
+    ar& curr_;
+    ar& advertised_;
+    ar& supported_;
+    ar& peer_;
 }
 
 template<class Archive>
 inline void ofp_action_dl_addr::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_action>(*this);
-    ar & dl_addr_;
-    ar & bs::make_binary_object(pad_, sizeof pad_);
+        ar& bs::base_object<ofp_action>(*this);
+    ar& dl_addr_;
+    ar& bs::make_binary_object(pad_, sizeof pad_);
 }
 
 template<class Archive>
 inline void ofp_switch_config::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_msg>(*this);
-    ar & flags_;
-    ar & miss_send_len_;
+        ar& bs::base_object<ofp_msg>(*this);
+    ar& flags_;
+    ar& miss_send_len_;
 }
 
 template<class Archive>
 inline void ofp_action_vlan_pcp::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_action>(*this);
-    ar & vlan_pcp_;
-    ar & bs::make_binary_object(pad_, sizeof pad_);
+        ar& bs::base_object<ofp_action>(*this);
+    ar& vlan_pcp_;
+    ar& bs::make_binary_object(pad_, sizeof pad_);
 }
 
 template<class Archive>
 inline void ofp_queue_stats::serialize(Archive& ar, const unsigned int)
 {
-    ar & port_no_;
-    ar & bs::make_binary_object(pad_, sizeof pad_);
-    ar & queue_id_;
-    ar & tx_bytes_;
-    ar & tx_packets_;
-    ar & tx_errors_;
+    ar& port_no_;
+    ar& bs::make_binary_object(pad_, sizeof pad_);
+    ar& queue_id_;
+    ar& tx_bytes_;
+    ar& tx_packets_;
+    ar& tx_errors_;
 }
 
 template<class Archive>
 inline void ofp_flow_stats::serialize(Archive& ar, const unsigned int)
 {
-    ar & length_;
-    ar & table_id_;
-    ar & pad_;
-    ar & match_;
-    ar & duration_sec_;
-    ar & duration_nsec_;
-    ar & priority_;
-    ar & idle_timeout_;
-    ar & hard_timeout_;
-    ar & bs::make_binary_object(pad2_, sizeof pad2_);
-    ar & cookie_;
-    ar & packet_count_;
-    ar & byte_count_;
-	actions_.length(length() - min_bytes());
-	ar & actions_;
+    ar& length_;
+    ar& table_id_;
+    ar& pad_;
+    ar& match_;
+    ar& duration_sec_;
+    ar& duration_nsec_;
+    ar& priority_;
+    ar& idle_timeout_;
+    ar& hard_timeout_;
+    ar& bs::make_binary_object(pad2_, sizeof pad2_);
+    ar& cookie_;
+    ar& packet_count_;
+    ar& byte_count_;
+    actions_.length(length() - min_bytes());
+    ar& actions_;
 }
 
 template<class Archive>
 inline void ofp_features_reply::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_msg>(*this);
-    ar & datapath_id_;
-    ar & n_buffers_;
-    ar & n_tables_;
-    ar & bs::make_binary_object(pad_, sizeof pad_);
-    ar & capabilities_;
-    ar & actions_;
+        ar& bs::base_object<ofp_msg>(*this);
+    ar& datapath_id_;
+    ar& n_buffers_;
+    ar& n_tables_;
+    ar& bs::make_binary_object(pad_, sizeof pad_);
+    ar& capabilities_;
+    ar& actions_;
     n_ports_ = (length() - min_bytes()) / OFP_PHY_PORT_BYTES;
-    ar & bs::make_array(ports_, n_ports_);
+    ar& bs::make_array(ports_, n_ports_);
 }
 
 template<class Archive>
 inline void ofp_action_nw_tos::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_action>(*this);
-    ar & nw_tos_;
-    ar & bs::make_binary_object(pad_, sizeof pad_);
+        ar& bs::base_object<ofp_action>(*this);
+    ar& nw_tos_;
+    ar& bs::make_binary_object(pad_, sizeof pad_);
 }
 
 template<class Archive>
@@ -508,184 +508,184 @@ inline void ofp_action::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value || type() == OFPAT_INVALID)
     {
-        ar & type_;
-        ar & len_;
+        ar& type_;
+        ar& len_;
     }
 }
 
 template<class Archive>
 inline void ofp_action_list::serialize(Archive& ar, const unsigned int)
 {
-	// For loading we rely on length to infer the size
-	std::size_t i = 0;
-	std::size_t byte_count = length_;
+    // For loading we rely on length to infer the size
+    std::size_t i = 0;
+    std::size_t byte_count = length_;
     if (Archive::is_loading::value) {
-		while (byte_count > 0) {
-			ofp_action action;
-			ar & action;
-			list_[i] = reinterpret_cast<ofp_action*>(storage_[i]);
-			action.factory(ar, const_cast<ofp_action*>(list_[i]));
-			byte_count -= list_[i++]->len();
-		}
-	} else {
-		while (byte_count > 0) {
-			byte_count -= list_[i]->len();
-			const_cast<ofp_action*>(list_[i++])->factory(ar, NULL);
-		}
-	}
+        while (byte_count > 0) {
+            ofp_action action;
+            ar& action;
+            list_[i] = reinterpret_cast<ofp_action*>(storage_[i]);
+            action.factory(ar, const_cast<ofp_action*>(list_[i]));
+            byte_count -= list_[i++]->len();
+        }
+    } else {
+        while (byte_count > 0) {
+            byte_count -= list_[i]->len();
+            const_cast<ofp_action*>(list_[i++])->factory(ar, NULL);
+        }
+    }
 }
 
 template<class Archive>
 inline void ofp_packet_queue::serialize(Archive& ar, const unsigned int)
 {
-    ar & queue_id_;
-    ar & len_;
-    ar & bs::make_binary_object(pad_, sizeof pad_);
-	ar & properties_;
+    ar& queue_id_;
+    ar& len_;
+    ar& bs::make_binary_object(pad_, sizeof pad_);
+    ar& properties_;
 }
 
 template<class Archive>
 inline void ofp_vendor::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_msg>(*this);
+        ar& bs::base_object<ofp_msg>(*this);
     if (Archive::is_saving::value || vendor() == OFPVT_INVALID)
-        ar & vendor_;
+        ar& vendor_;
 }
 
 template<class Archive>
 inline void ofp_error_msg::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_msg>(*this);
-    ar & type_;
-    ar & code_;
+        ar& bs::base_object<ofp_msg>(*this);
+    ar& type_;
+    ar& code_;
     data_size_ = length() - min_bytes();
-    ar & bs::make_binary_object(data_, data_size_);
+    ar& bs::make_binary_object(data_, data_size_);
 }
 
 template<class Archive>
 inline void ofp_match::serialize(Archive& ar, const unsigned int)
 {
-    ar & wildcards_;
-    ar & in_port_;
-    ar & dl_src_;
-    ar & dl_dst_;
-    ar & dl_vlan_;
-    ar & dl_vlan_pcp_;
-    ar & bs::make_binary_object(pad1_, sizeof pad1_);
-    ar & dl_type_;
-    ar & nw_tos_;
-    ar & nw_proto_;
-    ar & bs::make_binary_object(pad2_, sizeof pad2_);
-    ar & nw_src_;
-    ar & nw_dst_;
-    ar & tp_src_;
-    ar & tp_dst_;
+    ar& wildcards_;
+    ar& in_port_;
+    ar& dl_src_;
+    ar& dl_dst_;
+    ar& dl_vlan_;
+    ar& dl_vlan_pcp_;
+    ar& bs::make_binary_object(pad1_, sizeof pad1_);
+    ar& dl_type_;
+    ar& nw_tos_;
+    ar& nw_proto_;
+    ar& bs::make_binary_object(pad2_, sizeof pad2_);
+    ar& nw_src_;
+    ar& nw_dst_;
+    ar& tp_src_;
+    ar& tp_dst_;
 }
 
 template<class Archive>
 inline void ofp_queue_get_config_reply::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_msg>(*this);
-    ar & port_;
-    ar & bs::make_binary_object(pad_, sizeof pad_);
+        ar& bs::base_object<ofp_msg>(*this);
+    ar& port_;
+    ar& bs::make_binary_object(pad_, sizeof pad_);
     n_queues_ = (length() - OFP_QUEUE_GET_CONFIG_REPLY_BYTES) / OFP_PACKET_QUEUE_BYTES;
-    ar & bs::make_array(queues_, n_queues_);
+    ar& bs::make_array(queues_, n_queues_);
 }
 
 template<class Archive>
 inline void ofp_stats::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_msg>(*this);
+        ar& bs::base_object<ofp_msg>(*this);
     if (Archive::is_saving::value || type() == OFPST_INVALID)
     {
-        ar & type_;
-        ar & flags_;
+        ar& type_;
+        ar& flags_;
     }
 }
 
 template<class Archive>
 inline void ofp_stats_request::serialize(Archive& ar, const unsigned int)
 {
-	ar & bs::base_object<ofp_stats>(*this);
+    ar& bs::base_object<ofp_stats>(*this);
 }
 
 template<class Archive>
 inline void ofp_stats_reply::serialize(Archive& ar, const unsigned int)
 {
-	ar & bs::base_object<ofp_stats>(*this);
+    ar& bs::base_object<ofp_stats>(*this);
 }
 
 template<class Archive>
 inline void ofp_flow_stats_request::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_stats_request>(*this);
-    ar & match_;
-    ar & table_id_;
-    ar & pad_;
-    ar & out_port_;
+        ar& bs::base_object<ofp_stats_request>(*this);
+    ar& match_;
+    ar& table_id_;
+    ar& pad_;
+    ar& out_port_;
 }
 
 template<class Archive>
 inline void ofp_aggregate_stats_request::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_stats_request>(*this);
-    ar & match_;
-    ar & table_id_;
-    ar & pad_;
-    ar & out_port_;
+        ar& bs::base_object<ofp_stats_request>(*this);
+    ar& match_;
+    ar& table_id_;
+    ar& pad_;
+    ar& out_port_;
 }
 
 template<class Archive>
 inline void ofp_port_stats_request::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_stats_request>(*this);
-    ar & port_no_;
-    ar & bs::make_binary_object(pad_, sizeof pad_);
+        ar& bs::base_object<ofp_stats_request>(*this);
+    ar& port_no_;
+    ar& bs::make_binary_object(pad_, sizeof pad_);
 }
 
 template<class Archive>
 inline void ofp_queue_stats_request::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_stats_request>(*this);
-    ar & port_no_;
-    ar & bs::make_binary_object(pad_, sizeof pad_);
-    ar & queue_id_;
+        ar& bs::base_object<ofp_stats_request>(*this);
+    ar& port_no_;
+    ar& bs::make_binary_object(pad_, sizeof pad_);
+    ar& queue_id_;
 }
 
 template<class Archive>
 inline void ofp_vendor_stats_request::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_stats_request>(*this);
+        ar& bs::base_object<ofp_stats_request>(*this);
     if (Archive::is_saving::value || vendor() == OFPVT_INVALID)
-        ar & vendor_;
+        ar& vendor_;
 }
 
 template<class Archive>
 inline void ofp_desc_stats_reply::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_stats_reply>(*this);
-    ar & bs::make_binary_object(mfr_desc_, sizeof mfr_desc_);
-    ar & bs::make_binary_object(hw_desc_, sizeof hw_desc_);
-    ar & bs::make_binary_object(sw_desc_, sizeof sw_desc_);
-    ar & bs::make_binary_object(serial_num_, sizeof serial_num_);
-    ar & bs::make_binary_object(dp_desc_, sizeof dp_desc_);
+        ar& bs::base_object<ofp_stats_reply>(*this);
+    ar& bs::make_binary_object(mfr_desc_, sizeof mfr_desc_);
+    ar& bs::make_binary_object(hw_desc_, sizeof hw_desc_);
+    ar& bs::make_binary_object(sw_desc_, sizeof sw_desc_);
+    ar& bs::make_binary_object(serial_num_, sizeof serial_num_);
+    ar& bs::make_binary_object(dp_desc_, sizeof dp_desc_);
 }
 
 template<class Archive>
 inline void ofp_flow_stats_reply::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_stats_reply>(*this);
+        ar& bs::base_object<ofp_stats_reply>(*this);
     // TODO: fix vector
     //ar & bs::make_array(&v_[0], v_.size());
 }
@@ -694,18 +694,18 @@ template<class Archive>
 inline void ofp_aggregate_stats_reply::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_stats_reply>(*this);
-    ar & packet_count_;
-    ar & byte_count_;
-    ar & flow_count_;
-    ar & bs::make_binary_object(pad_, sizeof pad_);
+        ar& bs::base_object<ofp_stats_reply>(*this);
+    ar& packet_count_;
+    ar& byte_count_;
+    ar& flow_count_;
+    ar& bs::make_binary_object(pad_, sizeof pad_);
 }
 
 template<class Archive>
 inline void ofp_table_stats_reply::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_stats_reply>(*this);
+        ar& bs::base_object<ofp_stats_reply>(*this);
     //ar & bs::make_array(&v_[0], v_.size());
 }
 
@@ -713,7 +713,7 @@ template<class Archive>
 inline void ofp_port_stats_reply::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_stats_reply>(*this);
+        ar& bs::base_object<ofp_stats_reply>(*this);
     //ar & bs::make_array(&v_[0], v_.size());
 }
 
@@ -721,7 +721,7 @@ template<class Archive>
 inline void ofp_queue_stats_reply::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_stats_reply>(*this);
+        ar& bs::base_object<ofp_stats_reply>(*this);
     //ar & bs::make_array(&v_[0], v_.size());
 }
 
@@ -729,9 +729,9 @@ template<class Archive>
 inline void ofp_vendor_stats_reply::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_stats_reply>(*this);
+        ar& bs::base_object<ofp_stats_reply>(*this);
     if (Archive::is_saving::value || vendor() == OFPVT_INVALID)
-        ar & vendor_;
+        ar& vendor_;
 }
 
 template<class Archive>
@@ -741,22 +741,22 @@ inline void ofp_msg::serialize(Archive& ar, const unsigned int)
     // deserialize only if object is not a subclass
     if (Archive::is_saving::value || type() == OFPT_INVALID)
     {
-        ar & version_;
-        ar & type_;
-        ar & length_;
-        ar & xid_;
-		// TODO: trial
-		/*
+        ar& version_;
+        ar& type_;
+        ar& length_;
+        ar& xid_;
+        // TODO: trial
+        /*
 
-		if (Archive::is_saving::value) {
-			length_ = ntohs(length_);
-			xid_ = htonl(xid_);
-		}
-		ar & bs::make_binary_object(&version_, min_bytes());
-		length_ = ntohs(length_);
-		xid_ = htonl(xid_);
-		ar & bs::make_binary_object(&version_, min_bytes());
-		*/
+        if (Archive::is_saving::value) {
+            length_ = ntohs(length_);
+            xid_ = htonl(xid_);
+        }
+        ar & bs::make_binary_object(&version_, min_bytes());
+        length_ = ntohs(length_);
+        xid_ = htonl(xid_);
+        ar & bs::make_binary_object(&version_, min_bytes());
+        */
     }
 }
 
@@ -764,23 +764,23 @@ template<class Archive>
 inline void ofp_packet_in::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_msg>(*this);
-	/*
-	ar & bs::make_binary_object(&buffer_id_, length() - 8);
+        ar& bs::base_object<ofp_msg>(*this);
+    /*
+    ar & bs::make_binary_object(&buffer_id_, length() - 8);
     uint8_t size = length() - min_bytes();
     packet_buf_ = boost::asio::buffer(
-			const_cast<uint8_t*>(
-				boost::asio::buffer_cast<const uint8_t*>(packet_buf_)),
-			size);
-	*/
-    ar & buffer_id_;
-    ar & total_len_;
-    ar & in_port_;
-    ar & reason_;
-    ar & pad_;
+            const_cast<uint8_t*>(
+                boost::asio::buffer_cast<const uint8_t*>(packet_buf_)),
+            size);
+    */
+    ar& buffer_id_;
+    ar& total_len_;
+    ar& in_port_;
+    ar& reason_;
+    ar& pad_;
     uint8_t size = length() - min_bytes();
     uint8_t* packet = const_cast<uint8_t*>(boost::asio::buffer_cast<const uint8_t*>(packet_buf_));
-    ar & bs::make_binary_object(packet, size);
+    ar& bs::make_binary_object(packet, size);
     packet_buf_ = boost::asio::buffer(packet, size);
 }
 
@@ -788,91 +788,91 @@ template<class Archive>
 inline void ofp_port_status::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_msg>(*this);
-    ar & reason_;
-    ar & bs::make_binary_object(pad_, sizeof pad_);
-    ar & desc_;
+        ar& bs::base_object<ofp_msg>(*this);
+    ar& reason_;
+    ar& bs::make_binary_object(pad_, sizeof pad_);
+    ar& desc_;
 }
 
 template<class Archive>
 inline void ofp_flow_mod::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_msg>(*this);
-    ar & match_;
-    ar & cookie_;
-    ar & command_;
-    ar & idle_timeout_;
-    ar & hard_timeout_;
-    ar & priority_;
-    ar & buffer_id_;
-    ar & out_port_;
-    ar & flags_;
-	actions_.length(length() - min_bytes());
-	ar & actions_;
+        ar& bs::base_object<ofp_msg>(*this);
+    ar& match_;
+    ar& cookie_;
+    ar& command_;
+    ar& idle_timeout_;
+    ar& hard_timeout_;
+    ar& priority_;
+    ar& buffer_id_;
+    ar& out_port_;
+    ar& flags_;
+    actions_.length(length() - min_bytes());
+    ar& actions_;
 }
 
 template<class Archive>
 inline void ofp_table_stats::serialize(Archive& ar, const unsigned int)
 {
-    ar & table_id_;
-    ar & bs::make_binary_object(pad_, sizeof pad_);
-    ar & bs::make_binary_object(name_, sizeof name_);
-    ar & wildcards_;
-    ar & max_entries_;
-    ar & active_count_;
-    ar & lookup_count_;
-    ar & matched_count_;
+    ar& table_id_;
+    ar& bs::make_binary_object(pad_, sizeof pad_);
+    ar& bs::make_binary_object(name_, sizeof name_);
+    ar& wildcards_;
+    ar& max_entries_;
+    ar& active_count_;
+    ar& lookup_count_;
+    ar& matched_count_;
 }
 
 template<class Archive>
 inline void ofp_queue_prop_list::serialize(Archive& ar, const unsigned int)
 {
-	// For loading we rely on length to infer the size
-	std::size_t i = 0;
-	std::size_t byte_count = length_;
+    // For loading we rely on length to infer the size
+    std::size_t i = 0;
+    std::size_t byte_count = length_;
     if (Archive::is_loading::value) {
-		while (byte_count > 0) {
-			ofp_queue_prop qp;
-			ar & qp;
-			list_[i] = reinterpret_cast<ofp_queue_prop*>(storage_[i]);
-			qp.factory(ar, const_cast<ofp_queue_prop*>(list_[i]));
-			byte_count -= list_[i++]->len();
-		}
-	} else {
-		while (byte_count > 0) {
-			byte_count -= list_[i]->len();
-			const_cast<ofp_queue_prop*>(list_[i++])->factory(ar, NULL);
-		}
-	}
+        while (byte_count > 0) {
+            ofp_queue_prop qp;
+            ar& qp;
+            list_[i] = reinterpret_cast<ofp_queue_prop*>(storage_[i]);
+            qp.factory(ar, const_cast<ofp_queue_prop*>(list_[i]));
+            byte_count -= list_[i++]->len();
+        }
+    } else {
+        while (byte_count > 0) {
+            byte_count -= list_[i]->len();
+            const_cast<ofp_queue_prop*>(list_[i++])->factory(ar, NULL);
+        }
+    }
 }
 
 template<class Archive>
 inline void ofp_queue_prop_min_rate::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_queue_prop>(*this);
-    ar & rate_;
-    ar & bs::make_binary_object(pad_, sizeof pad_);
+        ar& bs::base_object<ofp_queue_prop>(*this);
+    ar& rate_;
+    ar& bs::make_binary_object(pad_, sizeof pad_);
 }
 
 template<class Archive>
 inline void ofp_port_stats::serialize(Archive& ar, const unsigned int)
 {
-    ar & port_no_;
-    ar & bs::make_binary_object(pad_, sizeof pad_);
-    ar & rx_packets_;
-    ar & tx_packets_;
-    ar & rx_bytes_;
-    ar & tx_bytes_;
-    ar & rx_dropped_;
-    ar & tx_dropped_;
-    ar & rx_errors_;
-    ar & tx_errors_;
-    ar & rx_frame_err_;
-    ar & rx_over_err_;
-    ar & rx_crc_err_;
-    ar & collisions_;
+    ar& port_no_;
+    ar& bs::make_binary_object(pad_, sizeof pad_);
+    ar& rx_packets_;
+    ar& tx_packets_;
+    ar& rx_bytes_;
+    ar& tx_bytes_;
+    ar& rx_dropped_;
+    ar& tx_dropped_;
+    ar& rx_errors_;
+    ar& tx_errors_;
+    ar& rx_frame_err_;
+    ar& rx_over_err_;
+    ar& rx_crc_err_;
+    ar& collisions_;
 }
 
 template<class Archive>
@@ -880,9 +880,9 @@ inline void ofp_queue_prop::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value || property() == OFPQT_INVALID)
     {
-        ar & property_;
-        ar & len_;
-        ar & bs::make_binary_object(pad_, sizeof pad_);
+        ar& property_;
+        ar& len_;
+        ar& bs::make_binary_object(pad_, sizeof pad_);
     }
 }
 
@@ -890,191 +890,198 @@ template<class Archive>
 inline void ofp_port_mod::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_msg>(*this);
-    ar & port_no_;
-    ar & hw_addr_;
-    ar & config_;
-    ar & mask_;
-    ar & advertise_;
-    ar & bs::make_binary_object(pad_, sizeof pad_);
+        ar& bs::base_object<ofp_msg>(*this);
+    ar& port_no_;
+    ar& hw_addr_;
+    ar& config_;
+    ar& mask_;
+    ar& advertise_;
+    ar& bs::make_binary_object(pad_, sizeof pad_);
 }
 
 template<class Archive>
 inline void ofp_flow_removed::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_msg>(*this);
-    ar & match_;
-    ar & cookie_;
-    ar & priority_;
-    ar & reason_;
-    ar & bs::make_binary_object(pad_, sizeof pad_);
-    ar & duration_sec_;
-    ar & duration_nsec_;
-    ar & idle_timeout_;
-    ar & bs::make_binary_object(pad2_, sizeof pad2_);
-    ar & packet_count_;
-    ar & byte_count_;
+        ar& bs::base_object<ofp_msg>(*this);
+    ar& match_;
+    ar& cookie_;
+    ar& priority_;
+    ar& reason_;
+    ar& bs::make_binary_object(pad_, sizeof pad_);
+    ar& duration_sec_;
+    ar& duration_nsec_;
+    ar& idle_timeout_;
+    ar& bs::make_binary_object(pad2_, sizeof pad2_);
+    ar& packet_count_;
+    ar& byte_count_;
 }
 
 template<class Archive>
 inline void ofp_action_tp_port::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_action>(*this);
-    ar & tp_port_;
-    ar & bs::make_binary_object(pad_, sizeof pad_);
+        ar& bs::base_object<ofp_action>(*this);
+    ar& tp_port_;
+    ar& bs::make_binary_object(pad_, sizeof pad_);
 }
 
 template<class Archive>
 inline void ofp_action_vendor::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_action>(*this);
+        ar& bs::base_object<ofp_action>(*this);
     if (Archive::is_saving::value || vendor() == OFPVT_INVALID)
-        ar & vendor_;
+        ar& vendor_;
 }
 
 template<class Archive>
 inline void ofp_action_vlan_vid::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_action>(*this);
-    ar & vlan_vid_;
-    ar & bs::make_binary_object(pad_, sizeof pad_);
+        ar& bs::base_object<ofp_action>(*this);
+    ar& vlan_vid_;
+    ar& bs::make_binary_object(pad_, sizeof pad_);
 }
 
 template<class Archive>
 inline void ofp_action_output::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_action>(*this);
-    ar & port_;
-    ar & max_len_;
+        ar& bs::base_object<ofp_action>(*this);
+    ar& port_;
+    ar& max_len_;
 }
 
 template<class Archive>
 inline void ofp_action_enqueue::serialize(Archive& ar, const unsigned int)
 {
     if (Archive::is_saving::value)
-        ar & bs::base_object<ofp_action>(*this);
-    ar & port_;
-    ar & bs::make_binary_object(pad_, sizeof pad_);
-    ar & queue_id_;
+        ar& bs::base_object<ofp_action>(*this);
+    ar& port_;
+    ar& bs::make_binary_object(pad_, sizeof pad_);
+    ar& queue_id_;
 }
 
 template<class Archive>
 inline void ofp_action_dl_dst::serialize(Archive& ar, const unsigned int)
 {
-    if (Archive::is_saving::value) ar & bs::base_object<ofp_action_dl_addr>(*this);
+    if (Archive::is_saving::value) ar& bs::base_object<ofp_action_dl_addr>(*this);
 }
 
 template<class Archive>
 inline void ofp_action_dl_src::serialize(Archive& ar, const unsigned int)
 {
-    if (Archive::is_saving::value) ar & bs::base_object<ofp_action_dl_addr>(*this);
+    if (Archive::is_saving::value) ar& bs::base_object<ofp_action_dl_addr>(*this);
 }
 
 template<class Archive>
 inline void ofp_action_nw_dst::serialize(Archive& ar, const unsigned int)
 {
-    if (Archive::is_saving::value) ar & bs::base_object<ofp_action_nw_addr>(*this);
+    if (Archive::is_saving::value) ar& bs::base_object<ofp_action_nw_addr>(*this);
 }
 
 template<class Archive>
 inline void ofp_action_nw_src::serialize(Archive& ar, const unsigned int)
 {
-    if (Archive::is_saving::value) ar & bs::base_object<ofp_action_nw_addr>(*this);
+    if (Archive::is_saving::value) ar& bs::base_object<ofp_action_nw_addr>(*this);
 }
 
 template<class Archive>
 inline void ofp_action_strip_vlan::serialize(Archive& ar, const unsigned int)
 {
-    if (Archive::is_saving::value) ar & bs::base_object<ofp_action>(*this);
+    if (Archive::is_saving::value) ar& bs::base_object<ofp_action>(*this);
 }
 
 template<class Archive>
 inline void ofp_action_tp_dst::serialize(Archive& ar, const unsigned int)
 {
-    if (Archive::is_saving::value) ar & bs::base_object<ofp_action_tp_port>(*this);
+    if (Archive::is_saving::value) ar& bs::base_object<ofp_action_tp_port>(*this);
 }
 
 template<class Archive>
 inline void ofp_action_tp_src::serialize(Archive& ar, const unsigned int)
 {
-    if (Archive::is_saving::value) ar & bs::base_object<ofp_action_tp_port>(*this);
+    if (Archive::is_saving::value) ar& bs::base_object<ofp_action_tp_port>(*this);
 }
 
 template<class Archive>
 inline void ofp_barrier_reply::serialize(Archive& ar, const unsigned int)
 {
-    if (Archive::is_saving::value) ar & bs::base_object<ofp_msg>(*this);
+    if (Archive::is_saving::value) ar& bs::base_object<ofp_msg>(*this);
 }
 
 template<class Archive>
 inline void ofp_barrier_request::serialize(Archive& ar, const unsigned int)
 {
-    if (Archive::is_saving::value) ar & bs::base_object<ofp_msg>(*this);
+    if (Archive::is_saving::value) ar& bs::base_object<ofp_msg>(*this);
 }
 
 template<class Archive>
 inline void ofp_desc_stats_request::serialize(Archive& ar, const unsigned int)
 {
-    if (Archive::is_saving::value) ar & bs::base_object<ofp_msg>(*this);
+    if (Archive::is_saving::value) ar& bs::base_object<ofp_msg>(*this);
 }
 
 template<class Archive>
 inline void ofp_echo_reply::serialize(Archive& ar, const unsigned int)
 {
-    if (Archive::is_saving::value) ar & bs::base_object<ofp_msg>(*this);
+    if (Archive::is_saving::value) ar& bs::base_object<ofp_msg>(*this);
+    const uint8_t* payload = boost::asio::buffer_cast<const uint8_t*>(payload_buf_);
+    uint8_t size = length() - min_bytes();
+    ar& bs::make_binary_object(const_cast<uint8_t*>(payload), size);
 }
 
 template<class Archive>
 inline void ofp_echo_request::serialize(Archive& ar, const unsigned int)
 {
-    if (Archive::is_saving::value) ar & bs::base_object<ofp_msg>(*this);
+    if (Archive::is_saving::value) ar& bs::base_object<ofp_msg>(*this);
+    const uint8_t* payload = boost::asio::buffer_cast<const uint8_t*>(payload_buf_);
+    uint8_t size = length() - min_bytes();
+    ar& bs::make_binary_object(const_cast<uint8_t*>(payload), size);
+    payload_buf_ = boost::asio::buffer(payload, size);
 }
 
 template<class Archive>
 inline void ofp_features_request::serialize(Archive& ar, const unsigned int)
 {
-    if (Archive::is_saving::value) ar & bs::base_object<ofp_msg>(*this);
+    if (Archive::is_saving::value) ar& bs::base_object<ofp_msg>(*this);
 }
 
 template<class Archive>
 inline void ofp_get_config_reply::serialize(Archive& ar, const unsigned int)
 {
-    if (Archive::is_saving::value) ar & bs::base_object<ofp_switch_config>(*this);
+    if (Archive::is_saving::value) ar& bs::base_object<ofp_switch_config>(*this);
 }
 
 template<class Archive>
 inline void ofp_get_config_request::serialize(Archive& ar, const unsigned int)
 {
-    if (Archive::is_saving::value) ar & bs::base_object<ofp_msg>(*this);
+    if (Archive::is_saving::value) ar& bs::base_object<ofp_msg>(*this);
 }
 
 template<class Archive>
 inline void ofp_hello::serialize(Archive& ar, const unsigned int)
 {
-    if (Archive::is_saving::value) ar & bs::base_object<ofp_msg>(*this);
+    if (Archive::is_saving::value) ar& bs::base_object<ofp_msg>(*this);
 }
 
 template<class Archive>
 inline void ofp_queue_prop_none::serialize(Archive& ar, const unsigned int)
 {
-    if (Archive::is_saving::value) ar & bs::base_object<ofp_queue_prop>(*this);
+    if (Archive::is_saving::value) ar& bs::base_object<ofp_queue_prop>(*this);
 }
 
 template<class Archive>
 inline void ofp_set_config::serialize(Archive& ar, const unsigned int)
 {
-    if (Archive::is_saving::value) ar & bs::base_object<ofp_switch_config>(*this);
+    if (Archive::is_saving::value) ar& bs::base_object<ofp_switch_config>(*this);
 }
 
 template<class Archive>
 inline void ofp_table_stats_request::serialize(Archive& ar, const unsigned int)
 {
-    if (Archive::is_saving::value) ar & bs::base_object<ofp_stats_request>(*this);
+    if (Archive::is_saving::value) ar& bs::base_object<ofp_stats_request>(*this);
 }
 
 
@@ -1099,12 +1106,12 @@ inline void ofp_match::from_packet(const uint32_t in_port_, boost::asio::const_b
     /* This is an 802.2 frame (not an Ethernet II frame) */
     if (dl_type() < ethernet::ETH2_CUTOFF)
     {
-        const llc_snap_header *h = cast_check<const llc_snap_header*>(packet);
+        const llc_snap_header* h = cast_check<const llc_snap_header*>(packet);
         if (h->llc.llc_dsap == LLC_DSAP_SNAP
-                && h->llc.llc_ssap == LLC_SSAP_SNAP
-                && h->llc.llc_cntl == LLC_CNTL_SNAP
-                && !memcmp(h->snap.snap_org, SNAP_ORG_ETHERNET,
-                           sizeof h->snap.snap_org))
+            && h->llc.llc_ssap == LLC_SSAP_SNAP
+            && h->llc.llc_cntl == LLC_CNTL_SNAP
+            && !memcmp(h->snap.snap_org, SNAP_ORG_ETHERNET,
+                       sizeof h->snap.snap_org))
         {
             dl_type(ntohs(h->snap.snap_type));
             packet = packet + sizeof *h;
@@ -1119,7 +1126,7 @@ inline void ofp_match::from_packet(const uint32_t in_port_, boost::asio::const_b
     /* Check for a VLAN tag */
     if (dl_type() == ETH_TYPE_VLAN)
     {
-        const vlan_header *vh = cast_check<const vlan_header*>(packet);
+        const vlan_header* vh = cast_check<const vlan_header*>(packet);
         if (vh)
         {
             dl_type(ntohs(vh->vlan_next_type));
@@ -1132,7 +1139,7 @@ inline void ofp_match::from_packet(const uint32_t in_port_, boost::asio::const_b
         dl_src(ethernetaddr(eth->eth_src));
         dl_dst(ethernetaddr(eth->eth_dst));
 
-        const ip_header *ip = cast_check<const ip_header*>(packet);
+        const ip_header* ip = cast_check<const ip_header*>(packet);
         nw_src(ntohl(ip->ip_src));
         nw_dst(ntohl(ip->ip_dst));
         nw_proto(ip->ip_proto);
@@ -1141,19 +1148,19 @@ inline void ofp_match::from_packet(const uint32_t in_port_, boost::asio::const_b
         {
             if (nw_proto() == ip_::proto::TCP)
             {
-                const tcp_header *tcp = cast_check<const tcp_header*>(packet);
+                const tcp_header* tcp = cast_check<const tcp_header*>(packet);
                 tp_src(ntohs(tcp->tcp_src));
                 tp_dst(ntohs(tcp->tcp_dst));
             }
             else if (nw_proto() == ip_::proto::UDP)
             {
-                const udp_header *udp = cast_check<const udp_header*>(packet);
+                const udp_header* udp = cast_check<const udp_header*>(packet);
                 tp_src(ntohs(udp->udp_src));
                 tp_dst(ntohs(udp->udp_dst));
             }
             else if (nw_proto() == ip_::proto::ICMP)
             {
-                const icmp_header *icmp = cast_check<const icmp_header*>(packet);
+                const icmp_header* icmp = cast_check<const icmp_header*>(packet);
                 tp_src(ntohs(icmp->icmp_type));
                 tp_dst(ntohs(icmp->icmp_code));
             }
@@ -1164,9 +1171,9 @@ inline void ofp_match::from_packet(const uint32_t in_port_, boost::asio::const_b
         dl_src(ethernetaddr(eth->eth_src));
         dl_dst(ethernetaddr(eth->eth_dst));
 
-        const arp_eth_header *arp = cast_check<const arp_eth_header*>(packet);
+        const arp_eth_header* arp = cast_check<const arp_eth_header*>(packet);
         if (ntohs(arp->ar_pro) == ARP_PRO_IP
-                && arp->ar_pln == 4/*IP_ADDR_LEN*/)
+            && arp->ar_pln == 4/*IP_ADDR_LEN*/)
         {
             nw_src(ntohl(arp->ar_spa));
             nw_dst(ntohl(arp->ar_tpa));

@@ -49,52 +49,52 @@ struct Bridge_id
         priority = htons(in);
     }
 
-    bool operator == (const Bridge_id &in) const;
-    bool operator != (const Bridge_id &in) const;
-    bool operator <  (const Bridge_id &in) const;
-    bool operator <= (const Bridge_id &in) const;
-    bool operator >  (const Bridge_id &in) const;
-    bool operator >= (const Bridge_id &in) const;
-} __attribute__ ((__packed__));
+    bool operator == (const Bridge_id& in) const;
+    bool operator != (const Bridge_id& in) const;
+    bool operator < (const Bridge_id& in) const;
+    bool operator <= (const Bridge_id& in) const;
+    bool operator > (const Bridge_id& in) const;
+    bool operator >= (const Bridge_id& in) const;
+} __attribute__((__packed__));
 
 inline
-bool Bridge_id::operator== (const Bridge_id &in) const
+bool Bridge_id::operator== (const Bridge_id& in) const
 {
     return ::memcmp(&in, this, sizeof(Bridge_id)) == 0;
 }
 
 inline
-bool Bridge_id::operator!= (const Bridge_id &in) const
+bool Bridge_id::operator!= (const Bridge_id& in) const
 {
     return ::memcmp(&in, this, sizeof(Bridge_id)) != 0;
 }
 
 inline
-bool Bridge_id::operator< (const Bridge_id &in) const
+bool Bridge_id::operator< (const Bridge_id& in) const
 {
     return ::memcmp(&in, this, sizeof(Bridge_id)) < 0;
 }
 
 inline
-bool Bridge_id::operator<= (const Bridge_id &in) const
+bool Bridge_id::operator<= (const Bridge_id& in) const
 {
     return ::memcmp(&in, this, sizeof(Bridge_id)) <= 0;
 }
 
 inline
-bool Bridge_id::operator> (const Bridge_id &in) const
+bool Bridge_id::operator> (const Bridge_id& in) const
 {
     return ::memcmp(&in, this, sizeof(Bridge_id)) > 0;
 }
 
 inline
-bool Bridge_id::operator>= (const Bridge_id &in) const
+bool Bridge_id::operator>= (const Bridge_id& in) const
 {
     return ::memcmp(&in, this, sizeof(Bridge_id)) >= 0;
 }
 
 inline
-std::ostream& operator<< (std::ostream& os, const Bridge_id &in)
+std::ostream& operator<< (std::ostream& os, const Bridge_id& in)
 {
     os << "0x" << std::hex << ntohs(in.priority) << "/" << in.addr;
     return os;
@@ -181,10 +181,10 @@ struct Config_bpdu
     uint16_t  max_age;
     uint16_t  hello_time;
     uint16_t  fwd_delay;
-} __attribute__ ((__packed__));
+} __attribute__((__packed__));
 
 inline
-std::ostream& operator<< (std::ostream& os, const Config_bpdu &in)
+std::ostream& operator<< (std::ostream& os, const Config_bpdu& in)
 {
     os << "[proto:" << ntohs(in.proto_id)
        << " ver:" << in.version

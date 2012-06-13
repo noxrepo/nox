@@ -34,7 +34,6 @@
 #ifndef OPENFLOW_OF1_DEFS_H
 #define OPENFLOW_OF1_DEFS_H
 
-#include <byteswap.h>
 #include <stdint.h>
 
 namespace vigil
@@ -47,7 +46,7 @@ namespace v1
 /* Version number:
  * Non-experimental versions released: 0x01
  * Experimental versions released: 0x81 -- 0x99
- * 
+ *
  * The most significant bit being set in the version field indicates an
  * experimental OpenFlow version.
  */
@@ -201,28 +200,8 @@ const unsigned int OFPFW_ICMP_CODE = OFPFW_TP_DST;
 
 enum ofp_vendor_type
 {
-	OFPVT_INVALID = 0xffffffff
+    OFPVT_INVALID = 0xffffffff
 };
-
-template <class T>
-inline T& swap_bytes(T& t){
-	return t;
-}
-
-inline uint16_t swap_bytes(const uint16_t & t)
-{
-	return bswap_16(t);
-}
-
-inline uint32_t swap_bytes(const uint32_t & t)
-{
-	return bswap_32(t);
-}
-
-inline uint64_t swap_bytes(const uint64_t & t)
-{
-	return bswap_64(t);
-}
 
 } // namespace v1
 } // namespace openflow

@@ -25,7 +25,7 @@
 
 namespace vigil
 {
-template <class Value,
+template < class Value,
          class Hash = std::tr1::hash<Value>,
          class Equal = std::equal_to<Value>,
          class Allocator = std::allocator<Value> >
@@ -41,7 +41,7 @@ class hash_set
 
 namespace vigil
 {
-template <class Value,
+template < class Value,
          class Hash = __gnu_cxx::hash<Value>,
          class Equal = std::equal_to<Value>,
          class Allocator = std::allocator<Value> >

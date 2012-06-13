@@ -64,7 +64,7 @@ Deployer::scan(boost::filesystem::path p)
         try
         {
             if (!is_directory(j->status()) &&
-                    j->path().leaf() == CONFIG_FILE)
+                j->path().leaf() == CONFIG_FILE)
             {
                 description_files.push_back(j->path());
                 continue;
@@ -92,8 +92,8 @@ Deployer::get_contexts() const
     Component_context_list l;
 
     for (Component_name_context_map::const_iterator i =
-                uninstalled_contexts.begin();
-            i != uninstalled_contexts.end(); ++i)
+             uninstalled_contexts.begin();
+         i != uninstalled_contexts.end(); ++i)
     {
         l.push_back(i->second);
     }

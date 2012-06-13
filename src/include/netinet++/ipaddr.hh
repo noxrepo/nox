@@ -54,20 +54,20 @@ public:
     {
     }
     bad_ipaddr_cast(
-        const std::type_info &source_type,
-        const std::type_info &target_type) :
+        const std::type_info& source_type,
+        const std::type_info& target_type) :
         source(&source_type), target(&target_type)
     {
     }
-    const std::type_info &source_type() const
+    const std::type_info& source_type() const
     {
         return *source;
     }
-    const std::type_info &target_type() const
+    const std::type_info& target_type() const
     {
         return *target;
     }
-    virtual const char *what() const throw()
+    virtual const char* what() const throw()
     {
         return "bad ip address cast: "
                "source string value could not be interpreted as ip address";
@@ -76,8 +76,8 @@ public:
     {
     }
 private:
-    const std::type_info *source;
-    const std::type_info *target;
+    const std::type_info* source;
+    const std::type_info* target;
 };
 
 
@@ -110,22 +110,22 @@ struct ipaddr
     // Casting Operators
     // ------------------------------------------------------------------------
 
-    operator bool        () const;
-    operator uint32_t    () const;
-    operator std::string () const;
+    operator bool () const;
+    operator uint32_t () const;
+    operator std::string() const;
 
     // ------------------------------------------------------------------------
     // Binary Operators
     // ------------------------------------------------------------------------
 
-    bool    operator !  () const;
-    ipaddr  operator ~  () const;
-    ipaddr  operator &  (const ipaddr&) const;
-    ipaddr  operator &  (uint32_t) const;
+    bool    operator !() const;
+    ipaddr  operator ~() const;
+    ipaddr  operator & (const ipaddr&) const;
+    ipaddr  operator & (uint32_t) const;
     ipaddr& operator &= (const ipaddr&);
     ipaddr& operator &= (uint32_t);
-    ipaddr  operator |  (const ipaddr&) const;
-    ipaddr  operator |  (uint32_t) const;
+    ipaddr  operator | (const ipaddr&) const;
+    ipaddr  operator | (uint32_t) const;
     ipaddr& operator |= (const ipaddr&);
     ipaddr& operator |= (uint32_t);
 
@@ -137,10 +137,10 @@ struct ipaddr
     ipaddr operator ++ (int);
     ipaddr operator -- ();
     ipaddr operator += (int);
-    ipaddr operator +  (int) const;
+    ipaddr operator + (int) const;
 
-    int    operator -  (const ipaddr &) const;
-    ipaddr operator -  (int) const;
+    int    operator - (const ipaddr&) const;
+    ipaddr operator - (int) const;
 
     // ------------------------------------------------------------------------
     // Assignment
@@ -157,12 +157,12 @@ struct ipaddr
     bool operator == (uint32_t) const;
     bool operator != (const ipaddr&) const;
     bool operator != (uint32_t) const;
-    bool operator <  (uint32_t) const;
-    bool operator <  (const ipaddr&) const;
+    bool operator < (uint32_t) const;
+    bool operator < (const ipaddr&) const;
     bool operator <= (uint32_t) const;
     bool operator <= (const ipaddr&) const;
-    bool operator >  (uint32_t) const;
-    bool operator >  (const ipaddr&) const;
+    bool operator > (uint32_t) const;
+    bool operator > (const ipaddr&) const;
     bool operator >= (uint32_t) const;
     bool operator >= (const ipaddr&) const;
 
@@ -177,7 +177,7 @@ struct ipaddr
      */
     bool isPrivate();
 
-} __attribute__ ((__packed__)); // -- struct ipaddr
+} __attribute__((__packed__));  // -- struct ipaddr
 
 //-----------------------------------------------------------------------------
 inline
@@ -207,7 +207,7 @@ ipaddr::ipaddr(const char* addr_in)
     // -- CHECK
     assert(hp->h_length == 4);
 
-    memcpy(&addr,hp->h_addr,hp->h_length);
+    memcpy(&addr, hp->h_addr, hp->h_length);
 }
 //-----------------------------------------------------------------------------
 
@@ -233,7 +233,7 @@ ipaddr::ipaddr(const std::string& addr_in)
     // -- CHECK
     assert(hp->h_length == 4);
 
-    memcpy(&addr,hp->h_addr,hp->h_length);
+    memcpy(&addr, hp->h_addr, hp->h_length);
 }
 //-----------------------------------------------------------------------------
 
@@ -308,7 +308,7 @@ ipaddr::string() const
 {
     char  buf[INET_ADDRSTRLEN];
 
-    if(! ::inet_ntop(AF_INET, ((struct in_addr*)&addr), buf, INET_ADDRSTRLEN ))
+    if (! ::inet_ntop(AF_INET, ((struct in_addr*)&addr), buf, INET_ADDRSTRLEN))
     {
         return "0.0.0.0";
     }
@@ -319,11 +319,11 @@ ipaddr::string() const
 
 //-----------------------------------------------------------------------------
 inline
-ipaddr::operator std::string () const
+ipaddr::operator std::string() const
 {
     char* tmp = 0;
 
-    if((tmp = ::inet_ntoa(*((struct in_addr*)&addr))) == 0)
+    if ((tmp = ::inet_ntoa(*((struct in_addr*)&addr))) == 0)
     {
         return "0.0.0.0";
     }
@@ -351,7 +351,7 @@ ipaddr::operator uint32_t () const
 //-----------------------------------------------------------------------------
 inline
 ipaddr
-ipaddr::operator ~ () const
+ipaddr::operator ~() const
 {
     return ipaddr(htonl(~addr));
 }
@@ -362,7 +362,7 @@ inline
 ipaddr
 ipaddr::operator & (const ipaddr& in) const
 {
-    return ipaddr(htonl(addr&in.addr));
+    return ipaddr(htonl(addr & in.addr));
 }
 //-----------------------------------------------------------------------------
 
@@ -400,7 +400,7 @@ inline
 ipaddr
 ipaddr::operator | (const ipaddr& in) const
 {
-    return ipaddr(htonl(addr|in.addr));
+    return ipaddr(htonl(addr | in.addr));
 }
 //-----------------------------------------------------------------------------
 
@@ -542,7 +542,7 @@ ipaddr::operator + (int in) const
 //-----------------------------------------------------------------------------
 inline
 int
-ipaddr::operator - (const ipaddr &in) const
+ipaddr::operator - (const ipaddr& in) const
 {
     return htonl(addr) - htonl(in.addr);
 }
@@ -595,7 +595,7 @@ ipaddr::operator <= (const ipaddr& in) const
 //-----------------------------------------------------------------------------
 inline
 bool
-ipaddr::operator >  (uint32_t in) const
+ipaddr::operator > (uint32_t in) const
 {
     return htonl(addr) > in;
 }
@@ -604,7 +604,7 @@ ipaddr::operator >  (uint32_t in) const
 //-----------------------------------------------------------------------------
 inline
 bool
-ipaddr::operator >  (const ipaddr& in) const
+ipaddr::operator > (const ipaddr& in) const
 {
     return htonl(addr) > htonl(in.addr);
 }
@@ -621,7 +621,7 @@ ipaddr::operator >= (uint32_t in) const
 //-----------------------------------------------------------------------------
 inline
 bool
-ipaddr::operator ! () const
+ipaddr::operator !() const
 {
     return addr == 0x00000000;
 }
@@ -639,7 +639,7 @@ ipaddr::operator >= (const ipaddr& in) const
 //-----------------------------------------------------------------------------
 inline
 std::ostream&
-operator <<(std::ostream& os,const ipaddr& addr)
+operator <<(std::ostream& os, const ipaddr& addr)
 {
     os << addr.string();
     return os;

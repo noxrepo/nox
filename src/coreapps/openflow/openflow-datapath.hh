@@ -69,12 +69,12 @@ private:
     enum Datapath_state
     {
         /* This is the ordinary progression of states. */
-        HANDSHAKE,				/* OpenFlow handshake in progress. */
-        CONNECTED,          	/* Connection established. */
-        IDLE,                 	/* Nothing received in a while. */
+        HANDSHAKE,              /* OpenFlow handshake in progress. */
+        CONNECTED,              /* Connection established. */
+        IDLE,                   /* Nothing received in a while. */
 
         /* These states are entered only when something goes wrong. */
-        ERROR,             		/* Sending OFPT_ERROR message. */
+        ERROR,                  /* Sending OFPT_ERROR message. */
         DISCONNECTED,
         DATAPATH_NSTATES
     } datapath_state;
@@ -126,7 +126,6 @@ private:
 
     void handle_message(const v1::ofp_msg* msg);
     Disposition handle_disconnect(const Event&);
-    Disposition handle_echo_request(const Event&);
     Disposition handle_error_msg(const Event&);
     Disposition handle_handshake(const Event&);
 

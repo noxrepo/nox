@@ -70,20 +70,20 @@ public:
     {
     }
     bad_ethernetaddr_cast(
-        const std::type_info &source_type,
-        const std::type_info &target_type) :
+        const std::type_info& source_type,
+        const std::type_info& target_type) :
         source(&source_type), target(&target_type)
     {
     }
-    const std::type_info &source_type() const
+    const std::type_info& source_type() const
     {
         return *source;
     }
-    const std::type_info &target_type() const
+    const std::type_info& target_type() const
     {
         return *target;
     }
-    virtual const char *what() const throw()
+    virtual const char* what() const throw()
     {
         return "bad ethernet address cast: "
                "source string value could not be interpreted as ethernet address";
@@ -92,8 +92,8 @@ public:
     {
     }
 private:
-    const std::type_info *source;
-    const std::type_info *target;
+    const std::type_info* source;
+    const std::type_info* target;
 };
 
 //-----------------------------------------------------------------------------
@@ -106,8 +106,8 @@ static const uint8_t pae_multicast[] = "\x01\x80\xc2\x00\x00\x03";
 /* printf formatting for ethernetaddr. */
 #define EA_FMT "%02x:%02x:%02x:%02x:%02x:%02x"
 #define EA_ARGS(ea)                                     \
-        (ea)->octet[0], (ea)->octet[1], (ea)->octet[2], \
-        (ea)->octet[3], (ea)->octet[4], (ea)->octet[5]
+    (ea)->octet[0], (ea)->octet[1], (ea)->octet[2], \
+    (ea)->octet[3], (ea)->octet[4], (ea)->octet[5]
 //-----------------------------------------------------------------------------
 struct ethernetaddr
 {
@@ -142,9 +142,9 @@ struct ethernetaddr
     //-------------------------------------------------------------------------
     // Overloaded casting operator
     //-------------------------------------------------------------------------
-    operator const uint8_t*() const;
-    operator const uint16_t*() const;
-    operator const struct ethernetaddr*() const;
+    operator const uint8_t* () const;
+    operator const uint16_t* () const;
+    operator const struct ethernetaddr* () const;
 
     //-------------------------------------------------------------------------
     // Overloaded assignment operator
@@ -159,9 +159,9 @@ struct ethernetaddr
 
     bool operator == (const ethernetaddr&) const;
     bool operator != (const ethernetaddr&) const;
-    bool operator <  (const ethernetaddr&) const;
+    bool operator < (const ethernetaddr&) const;
     bool operator <= (const ethernetaddr&) const;
-    bool operator >  (const ethernetaddr&) const;
+    bool operator > (const ethernetaddr&) const;
     bool operator >= (const ethernetaddr&) const;
 
     //-------------------------------------------------------------------------
@@ -192,18 +192,18 @@ struct ethernetaddr
 
     bool is_zero() const;
 
-	template<class Archive> void serialize(Archive&, unsigned int);
+    template<class Archive> void serialize(Archive&, unsigned int);
 
 private:
     void init_from_string(const char*);
-} __attribute__ ((__packed__));
+} __attribute__((__packed__));
 //-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
 inline
 ethernetaddr::ethernetaddr()
 {
-    memset(octet,0,LEN);
+    memset(octet, 0, LEN);
 }
 //-----------------------------------------------------------------------------
 
@@ -211,7 +211,7 @@ ethernetaddr::ethernetaddr()
 inline
 ethernetaddr::ethernetaddr(const ethernetaddr& addr_in)
 {
-    ::memcpy(octet,addr_in.octet,LEN);
+    ::memcpy(octet, addr_in.octet, LEN);
 }
 //-----------------------------------------------------------------------------
 
@@ -219,7 +219,7 @@ ethernetaddr::ethernetaddr(const ethernetaddr& addr_in)
 inline
 ethernetaddr::ethernetaddr(uint64_t id)
 {
-    if( (id & 0xffff000000000000ULL) != 0)
+    if ((id & 0xffff000000000000ULL) != 0)
     {
         // TODO
         //std::cerr << " ethernetaddr::operator=(uint64_t) warning, value "
@@ -248,7 +248,7 @@ ethernetaddr::ethernetaddr(const char* text)
 inline
 ethernetaddr::ethernetaddr(const unsigned char octet_[LEN])
 {
-    ::memcpy(octet,octet_,LEN);
+    ::memcpy(octet, octet_, LEN);
 }
 //-----------------------------------------------------------------------------
 
@@ -265,7 +265,7 @@ inline
 ethernetaddr&
 ethernetaddr::operator=(const ethernetaddr& addr_in)
 {
-    ::memcpy(octet,addr_in.octet,LEN);
+    ::memcpy(octet, addr_in.octet, LEN);
     return *this;
 }
 //-----------------------------------------------------------------------------
@@ -275,7 +275,7 @@ inline
 ethernetaddr&
 ethernetaddr::operator=(uint64_t               id)
 {
-    if( (id & 0xffff000000000000ULL) != 0)
+    if ((id & 0xffff000000000000ULL) != 0)
     {
         // TODO
         //std::cerr << " ethernetaddr::operator=(uint64_t) warning, value "
@@ -293,7 +293,7 @@ ethernetaddr::is_init() const
 {
     return
         (*((uint32_t*)octet) != 0) &&
-        (*(((uint16_t*)octet)+2) != 0) ;
+        (*(((uint16_t*)octet) + 2) != 0) ;
 }
 //-----------------------------------------------------------------------------
 
@@ -312,9 +312,9 @@ inline
 bool
 ethernetaddr::operator==(const ethernetaddr& addr_in) const
 {
-    for(unsigned int i=0 ; i < LEN ; i++)
+    for (unsigned int i = 0 ; i < LEN ; i++)
     {
-        if(octet[i] != addr_in.octet[i])
+        if (octet[i] != addr_in.octet[i])
         {
             return false;
         }
@@ -329,8 +329,8 @@ inline
 bool
 ethernetaddr::operator!=(const ethernetaddr& addr_in) const
 {
-    for(unsigned int i=0; i<LEN; i++)
-        if(octet[i] != addr_in.octet[i])
+    for (unsigned int i = 0; i < LEN; i++)
+        if (octet[i] != addr_in.octet[i])
             return true;
     return false;
 }
@@ -339,7 +339,7 @@ ethernetaddr::operator!=(const ethernetaddr& addr_in) const
 //-----------------------------------------------------------------------------
 inline
 bool
-ethernetaddr::operator <  (const ethernetaddr& in) const
+ethernetaddr::operator < (const ethernetaddr& in) const
 {
     return ::memcmp(octet, in.octet, LEN) < 0;
 }
@@ -348,7 +348,7 @@ ethernetaddr::operator <  (const ethernetaddr& in) const
 //-----------------------------------------------------------------------------
 inline
 bool
-ethernetaddr::operator <=  (const ethernetaddr& in) const
+ethernetaddr::operator <= (const ethernetaddr& in) const
 {
     return ::memcmp(octet, in.octet, LEN) <= 0;
 }
@@ -357,7 +357,7 @@ ethernetaddr::operator <=  (const ethernetaddr& in) const
 //-----------------------------------------------------------------------------
 inline
 bool
-ethernetaddr::operator >  (const ethernetaddr& in) const
+ethernetaddr::operator > (const ethernetaddr& in) const
 {
     return ::memcmp(octet, in.octet, LEN) > 0;
 }
@@ -366,7 +366,7 @@ ethernetaddr::operator >  (const ethernetaddr& in) const
 //-----------------------------------------------------------------------------
 inline
 bool
-ethernetaddr::operator >=  (const ethernetaddr& in) const
+ethernetaddr::operator >= (const ethernetaddr& in) const
 {
     return ::memcmp(octet, in.octet, LEN) >= 0;
 }
@@ -383,7 +383,7 @@ ethernetaddr::set_octet(const uint8_t* octet_in)
 
 //-----------------------------------------------------------------------------
 inline
-ethernetaddr::operator const struct ethernetaddr*() const
+ethernetaddr::operator const struct ethernetaddr* () const
 {
     return reinterpret_cast<const ethernetaddr*>(octet);
 }
@@ -391,7 +391,7 @@ ethernetaddr::operator const struct ethernetaddr*() const
 
 //-----------------------------------------------------------------------------
 inline
-ethernetaddr::operator const uint8_t*() const
+ethernetaddr::operator const uint8_t* () const
 {
     return reinterpret_cast<const uint8_t*>(octet);
 }
@@ -399,7 +399,7 @@ ethernetaddr::operator const uint8_t*() const
 
 //-----------------------------------------------------------------------------
 inline
-ethernetaddr::operator const uint16_t*() const
+ethernetaddr::operator const uint16_t* () const
 {
     return reinterpret_cast<const uint16_t*>(octet);
 }
@@ -466,7 +466,7 @@ inline
 bool
 ethernetaddr::is_zero() const
 {
-    return ((*(uint32_t*)octet) == 0) && ((*(uint16_t*)(octet+4)) == 0);
+    return ((*(uint32_t*)octet) == 0) && ((*(uint16_t*)(octet + 4)) == 0);
 }
 //-----------------------------------------------------------------------------
 template <class Archive>
@@ -474,12 +474,12 @@ inline
 void
 ethernetaddr::serialize(Archive& ar, const unsigned int)
 {
-	ar & boost::serialization::make_binary_object(octet, sizeof octet);
+    ar& boost::serialization::make_binary_object(octet, sizeof octet);
 }
 //-----------------------------------------------------------------------------
 inline
 std::ostream&
-operator <<(std::ostream& os,const ethernetaddr& addr_in)
+operator <<(std::ostream& os, const ethernetaddr& addr_in)
 {
     os << addr_in.string();
     return os;

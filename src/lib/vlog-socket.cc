@@ -111,8 +111,8 @@ Vlog_server_socket::close()
 
 static int
 recv_with_creds(int fd,
-                char *cmd_buf, size_t cmd_buf_size,
-                struct sockaddr_un *un, socklen_t *un_len)
+                char* cmd_buf, size_t cmd_buf_size,
+                struct sockaddr_un* un, socklen_t* un_len)
 {
 #ifdef SCM_CREDENTIALS
     /* Read a message and control messages from 'fd'.  */
@@ -142,19 +142,19 @@ recv_with_creds(int fd,
      * from the same user who started us, or by root. */
     ucred* cred = NULL;
     for (cmsghdr* cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL;
-            cmsg = CMSG_NXTHDR(&msg, cmsg))
+         cmsg = CMSG_NXTHDR(&msg, cmsg))
     {
         if (cmsg->cmsg_level == SOL_SOCKET
-                && cmsg->cmsg_type == SCM_CREDENTIALS)
+            && cmsg->cmsg_type == SCM_CREDENTIALS)
         {
-            cred = (ucred *) CMSG_DATA(cmsg);
+            cred = (ucred*) CMSG_DATA(cmsg);
         }
         else if (cmsg->cmsg_level == SOL_SOCKET
                  && cmsg->cmsg_type == SCM_RIGHTS)
         {
             /* Anyone can send us fds.  If we don't close them, then that's
              * a DoS: the sender can overflow our fd table. */
-            int* fds = (int *) CMSG_DATA(cmsg);
+            int* fds = (int*) CMSG_DATA(cmsg);
             size_t n_fds = (cmsg->cmsg_len - CMSG_LEN(0)) / sizeof *fds;
             size_t i;
             for (i = 0; i < n_fds; i++)
@@ -185,7 +185,7 @@ recv_with_creds(int fd,
     /* Receive a message. */
     len = sizeof *un;
     n = recvfrom(fd, cmd_buf, cmd_buf_size - 1, 0,
-                 (sockaddr *) un, &len);
+                 (sockaddr*) un, &len);
     *un_len = len;
     if (n < 0)
     {
@@ -439,7 +439,7 @@ make_sockaddr_un(const std::string& name, sockaddr_un* un, socklen_t* un_len)
     strncpy(un->sun_path, name.c_str(), sizeof un->sun_path);
     un->sun_path[sizeof un->sun_path - 1] = '\0';
     *un_len = (offsetof(struct sockaddr_un, sun_path)
-               + strlen (un->sun_path) + 1);
+               + strlen(un->sun_path) + 1);
 }
 
 Disposition remove_socket(std::string socket_name, const Event&)
