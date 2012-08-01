@@ -1087,11 +1087,16 @@ inline void ofp_table_stats_request::serialize(Archive& ar, const unsigned int)
 
 // Misc
 template<typename T>
-inline const T ofp_match::cast_check(boost::asio::const_buffer packet) const
+inline const T* ofp_match::cast_check(boost::asio::const_buffer packet) const
 {
-    const T t = boost::asio::buffer_cast<const T>(packet);
-    // TODO: error handling: throw exception
-    return t;
+    if (boost::asio::buffer_size(packet) < sizeof(T))
+    {
+        return NULL;
+    }
+    else
+    {
+        return boost::asio::buffer_cast<const T*>(packet);
+    }
 }
 
 // TODO: implement serialization
@@ -1100,13 +1105,26 @@ inline void ofp_match::from_packet(const uint32_t in_port_, boost::asio::const_b
 {
     in_port(in_port_);
     dl_vlan(OFP_VLAN_NONE);
-    const eth_header* eth = cast_check<const eth_header*>(packet);
-    dl_type(ntohs(eth->eth_type));
+    const eth_header* eth = cast_check<const eth_header>(packet);
+    packet = packet + sizeof(eth_header);
 
-    /* This is an 802.2 frame (not an Ethernet II frame) */
-    if (dl_type() < ethernet::ETH2_CUTOFF)
+    if (!eth)
     {
-        const llc_snap_header* h = cast_check<const llc_snap_header*>(packet);
+        // "Packet length %zu less than minimum Ethernet packet %d"
+        return;
+    }
+
+    if (dl_type() >= ethernet::ETH2_CUTOFF)
+    {
+        /* This is an Ethernet II frame */
+        dl_type(ntohs(eth->eth_type));
+    }
+    else
+    {
+        /* This is an 802.2 frame */
+        const llc_snap_header* h = cast_check<const llc_snap_header>(packet);
+        if (!h)
+            return;
         if (h->llc.llc_dsap == LLC_DSAP_SNAP
             && h->llc.llc_ssap == LLC_SSAP_SNAP
             && h->llc.llc_cntl == LLC_CNTL_SNAP
@@ -1126,20 +1144,25 @@ inline void ofp_match::from_packet(const uint32_t in_port_, boost::asio::const_b
     /* Check for a VLAN tag */
     if (dl_type() == ETH_TYPE_VLAN)
     {
-        const vlan_header* vh = cast_check<const vlan_header*>(packet);
-        if (vh)
-        {
-            dl_type(ntohs(vh->vlan_next_type));
-            dl_vlan(ntohs(vh->vlan_tci) & VLAN_VID);
-            dl_vlan_pcp((ntohs(vh->vlan_tci) & VLAN_PCP_MASK) >> VLAN_PCP_SHIFT);
-        }
+        const vlan_header* vh = cast_check<const vlan_header>(packet);
+        if (!vh)
+            return;
+        packet = packet + sizeof(vlan_header);
+        dl_type(ntohs(vh->vlan_next_type));
+        dl_vlan(ntohs(vh->vlan_tci) & VLAN_VID);
+        dl_vlan_pcp((ntohs(vh->vlan_tci) & VLAN_PCP_MASK) >> VLAN_PCP_SHIFT);
     }
-    else if (dl_type() == ETH_TYPE_IP)
-    {
-        dl_src(ethernetaddr(eth->eth_src));
-        dl_dst(ethernetaddr(eth->eth_dst));
+    
+    dl_src(ethernetaddr(eth->eth_src));
+    dl_dst(ethernetaddr(eth->eth_dst));
 
-        const ip_header* ip = cast_check<const ip_header*>(packet);
+    if (dl_type() == ETH_TYPE_IP)
+    {
+        const ip_header* ip = cast_check<const ip_header>(packet);
+        if (!ip)
+            return;
+        packet = packet + sizeof(ip_header);
+
         nw_src(ntohl(ip->ip_src));
         nw_dst(ntohl(ip->ip_dst));
         nw_proto(ip->ip_proto);
@@ -1148,19 +1171,28 @@ inline void ofp_match::from_packet(const uint32_t in_port_, boost::asio::const_b
         {
             if (nw_proto() == ip_::proto::TCP)
             {
-                const tcp_header* tcp = cast_check<const tcp_header*>(packet);
+                const tcp_header* tcp = cast_check<const tcp_header>(packet);
+                if (!tcp)
+                    return;
+                packet = packet + sizeof(tcp_header);
                 tp_src(ntohs(tcp->tcp_src));
                 tp_dst(ntohs(tcp->tcp_dst));
             }
             else if (nw_proto() == ip_::proto::UDP)
             {
-                const udp_header* udp = cast_check<const udp_header*>(packet);
+                const udp_header* udp = cast_check<const udp_header>(packet);
+                if (!udp)
+                    return;
+                packet = packet + sizeof(udp_header);
                 tp_src(ntohs(udp->udp_src));
                 tp_dst(ntohs(udp->udp_dst));
             }
             else if (nw_proto() == ip_::proto::ICMP)
             {
-                const icmp_header* icmp = cast_check<const icmp_header*>(packet);
+                const icmp_header* icmp = cast_check<const icmp_header>(packet);
+                if (!icmp)
+                    return;
+                packet = packet + sizeof(icmp_header);
                 tp_src(ntohs(icmp->icmp_type));
                 tp_dst(ntohs(icmp->icmp_code));
             }
@@ -1168,10 +1200,10 @@ inline void ofp_match::from_packet(const uint32_t in_port_, boost::asio::const_b
     }
     else if (dl_type() == ETH_TYPE_ARP)
     {
-        dl_src(ethernetaddr(eth->eth_src));
-        dl_dst(ethernetaddr(eth->eth_dst));
-
-        const arp_eth_header* arp = cast_check<const arp_eth_header*>(packet);
+        const arp_eth_header* arp = cast_check<const arp_eth_header>(packet);
+        if (!arp)
+            return;
+        packet = packet + sizeof(arp_eth_header);
         if (ntohs(arp->ar_pro) == ARP_PRO_IP
             && arp->ar_pln == 4/*IP_ADDR_LEN*/)
         {

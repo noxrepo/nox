@@ -15,14 +15,15 @@
  * You should have received a copy of the GNU General Public License
  * along with NOX.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <boost/bind.hpp>
-
-#include <tbb/concurrent_hash_map.h>
 
 #include <cstring>
 #include <netinet/in.h>
 #include <stdexcept>
 #include <stdint.h>
+
+#include <boost/bind.hpp>
+
+#include <tbb/concurrent_hash_map.h>
 
 #include "assert.hh"
 #include "component.hh"
@@ -51,6 +52,7 @@ public:
     Switch(const Component_context* c)
         : Component(c)
     {
+        setup_flows = true; // default value
     }
 
     void configure();
@@ -85,7 +87,6 @@ inline void
 Switch::configure()
 {
     /*
-    setup_flows = true; // default value
     BOOST_FOREACH (const std::string& arg, conf->get_arguments())
     {
         if (arg == "noflow")

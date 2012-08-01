@@ -6,9 +6,11 @@
 #include <boost/type_traits.hpp>
 #include <boost/archive/archive_exception.hpp>
 #include <boost/archive/detail/common_iarchive.hpp>
+#include <boost/archive/detail/iserializer.hpp>
 #include <boost/archive/detail/polymorphic_iarchive_route.hpp>
 #include <boost/archive/detail/register_archive.hpp>
 #include <boost/detail/endian.hpp>
+#include <boost/mpl/bool.hpp>
 #include <boost/serialization/array.hpp>
 #include <boost/serialization/is_bitwise_serializable.hpp>
 
@@ -17,12 +19,14 @@
 namespace vigil
 {
 class network_iarchive
-    : public boost::archive::detail::common_iarchive<network_iarchive>
+    //: public boost::archive::detail::common_iarchive<network_iarchive>
 {
 public:
-    typedef boost::archive::detail::common_iarchive<network_iarchive> archive_base_t;
-    friend class boost::archive::detail::common_iarchive<network_iarchive>;
-    friend class boost::archive::detail::interface_iarchive<network_iarchive>;
+    typedef boost::mpl::bool_<true> is_loading;
+    typedef boost::mpl::bool_<false> is_saving;
+    //typedef boost::archive::detail::common_iarchive<network_iarchive> archive_base_t;
+    //friend class boost::archive::detail::common_iarchive<network_iarchive>;
+    //friend class boost::archive::detail::interface_iarchive<network_iarchive>;
     friend class boost::archive::load_access;
 
     struct use_array_optimization
@@ -59,8 +63,20 @@ public:
     template<class T>
     void load_override(T& t, int)
     {
-        this->archive_base_t::load_override(t, 0);
+        //this->archive_base_t::load_override(t, 0);
+        t.serialize(*this, 0);
+        //boost::serialization::serialize_adl(
+        //    *this, t, 0);
+        //BOOST_STATIC_ASSERT(sizeof(T) == 0);
+        //this->archive_base_t::load_override(t, 0);
+
     }
+    // TODO: only for is_wrapper
+    template<class T>
+    void load_override(const T & t, int)
+    {
+        const_cast<T&>(t).serialize(*this, 0);
+    }    
     void load_override(uint8_t& t, int)
     {
         load_binary(&t, 1);
@@ -96,10 +112,21 @@ public:
     void load_override(boost::archive::class_name_type&, int) {}
     void load_override(boost::archive::tracking_type&, int) {}
 
+    template<class T>
+    network_iarchive& operator>>(T & t) {
+        load_override(t, 0);
+        return *this;
+    }
+
+    template<class T>
+    network_iarchive& operator&(T & t) {
+        return *this >> t;
+    }
+
 public:
     network_iarchive(boost::asio::streambuf& sbuf)
-        : archive_base_t(boost::archive::no_header | boost::archive::no_codecvt | endian_big),
-          m_sb(sbuf)
+        //: archive_base_t(boost::archive::no_header | boost::archive::no_codecvt | endian_big),
+        : m_sb(sbuf)
     {
     }
 
@@ -108,11 +135,10 @@ private:
     boost::asio::streambuf& m_sb;
 };
 
-typedef boost::archive::detail::polymorphic_iarchive_route <
-network_iarchive > polymorphic_network_iarchive;
+typedef boost::archive::detail::polymorphic_iarchive_route<network_iarchive> polymorphic_network_iarchive;
 } // namespace vigil
 
-BOOST_SERIALIZATION_REGISTER_ARCHIVE(vigil::network_iarchive)
-BOOST_SERIALIZATION_REGISTER_ARCHIVE(vigil::polymorphic_network_iarchive)
+//BOOST_SERIALIZATION_REGISTER_ARCHIVE(vigil::network_iarchive)
+//BOOST_SERIALIZATION_REGISTER_ARCHIVE(vigil::polymorphic_network_iarchive)
 
 #endif // NETWORK_IARCHIVE_HH

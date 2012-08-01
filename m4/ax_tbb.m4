@@ -20,7 +20,7 @@ AC_DEFUN([AX_TBB], [
                 TBB_LDFLAGS=`$PKG_CONFIG tbb --libs-only-L 2>/dev/null`
                 if test $? = 0; then
                     TBB_LIBS=`$PKG_CONFIG tbb --libs-only-l 2>/dev/null`
-                    TBB_INCLUDES=`$PKG_CONFIG tbb --cflags-only-I 2>/dev/null`
+                    TBB_CPPFLAGS=`$PKG_CONFIG tbb --cflags-only-I 2>/dev/null`
                     found=true
                 fi
             fi
@@ -35,11 +35,11 @@ AC_DEFUN([AX_TBB], [
     # a 'tbb' subdirectory
 
     if ! $found; then
-        TBB_INCLUDES=
+        TBB_CPPFLAGS=
         for tbbdir in $tbbdirs; do
             AC_MSG_CHECKING([for tbb/tbb.h in $tbbdir])
             if test -f "$tbbdir/include/tbb/tbb.h"; then
-                TBB_INCLUDES="-I$tbbdir/include"
+                TBB_CPPFLAGS="-I$tbbdir/include"
                 TBB_LDFLAGS="-L$tbbdir/lib"
                 TBB_LIBS="-ltbb"
                 found=true
@@ -59,14 +59,14 @@ AC_DEFUN([AX_TBB], [
 
     AC_MSG_CHECKING([whether compiling and linking against TBB works])
     echo "Trying link with TBB_LDFLAGS=$TBB_LDFLAGS;" \
-        "TBB_LIBS=$TBB_LIBS; TBB_INCLUDES=$TBB_INCLUDES" >&AS_MESSAGE_LOG_FD
+        "TBB_LIBS=$TBB_LIBS; TBB_CPPFLAGS=$TBB_CPPFLAGS" >&AS_MESSAGE_LOG_FD
 
     save_LIBS="$LIBS"
     save_LDFLAGS="$LDFLAGS"
     save_CPPFLAGS="$CPPFLAGS"
     LDFLAGS="$LDFLAGS $TBB_LDFLAGS"
     LIBS="$TBB_LIBS $LIBS"
-    CPPFLAGS="$TBB_INCLUDES $CPPFLAGS"
+    CPPFLAGS="$TBB_CPPFLAGS $CPPFLAGS"
 	AC_LANG_PUSH([C++])
 
     AC_LINK_IFELSE(
@@ -84,7 +84,7 @@ AC_DEFUN([AX_TBB], [
     LIBS="$save_LIBS"
 	AC_LANG_POP([C++])
 
-    AC_SUBST([TBB_INCLUDES])
+    AC_SUBST([TBB_CPPFLAGS])
     AC_SUBST([TBB_LIBS])
     AC_SUBST([TBB_LDFLAGS])
 

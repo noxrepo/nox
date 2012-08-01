@@ -19,7 +19,7 @@ switch_la_SOURCES =                             \
     switch.cc
 
 switch_la_LDFLAGS =                             \
-    $(AM_LDFLAGS) -export-dynamic -module       \
+    $(AM_LDFLAGS) -module                       \
     -version-info $(SWITCH_LIB_VERSION)
 
 switch_la_LIBADD =                              \

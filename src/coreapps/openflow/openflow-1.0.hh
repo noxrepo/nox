@@ -485,7 +485,7 @@ private:
     OFDEFMEM(uint16_t, tp_src);          /* TCP/UDP source port. */
     OFDEFMEM(uint16_t, tp_dst);          /* TCP/UDP destination port. */
 
-    template<typename T> const T cast_check(boost::asio::const_buffer) const;
+    template<typename T> const T* cast_check(boost::asio::const_buffer) const;
 };
 
 // 2.4. Flow Action Structures

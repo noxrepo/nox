@@ -43,7 +43,7 @@ fi
 sed -e "s/APPS_ID/core/" -e "s/TURN_ON_NETAPPS/$have_netapps/" configure.ac.in > configure.ac
 echo "AC_CONFIG_FILES([ " >> configure.ac
 
-find . -path "*Makefile.am" | grep -vE "$exclude_list" | sed -e "s/\.am$//" -e "s/^\.\///" >> configure.ac
+find . -path "*/Makefile.am" | grep -vE "$exclude_list" | sed -e "s/\.am$//" -e "s/^\.\///" >> configure.ac
 
 if test -e ./installer; then
     echo "installer/Makefile installer/build installer/decompress installer/package/installer " >> configure.ac

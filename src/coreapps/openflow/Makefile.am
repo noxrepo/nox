@@ -44,7 +44,7 @@ openflow_manager_la_SOURCES =                   \
     openflow-1.0.cc
 
 openflow_manager_la_LDFLAGS =                   \
-    $(AM_LDFLAGS) -export-dynamic -module       \
+    $(AM_LDFLAGS) -module                       \
     -version-info $(OPENFLOW_MANAGER_VERSION)
 
 openflow_manager_la_DEPENDENCIES =

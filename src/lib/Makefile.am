@@ -36,8 +36,7 @@ libnoxcore_la_LIBADD =                                      \
     $(OPENSSL_LIBS)
 
 libnoxcore_la_LDFLAGS =                                     \
-    $(AM_LDFLAGS) $(BOOST_LDFLAGS) -rdynamic                \
-    -version-info $(NOXCORE_LIB_VERSION)
+	$(AM_LDFLAGS) -version-info $(NOXCORE_LIB_VERSION)
 
 dhparams.c: dh1024.pem dh2048.pem dh4096.pem
 	(echo '#include "dhparams.h"' &&                        \

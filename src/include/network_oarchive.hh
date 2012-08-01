@@ -17,12 +17,14 @@
 namespace vigil
 {
 class network_oarchive
-    : public boost::archive::detail::common_oarchive<network_oarchive>
+    //: public boost::archive::detail::common_oarchive<network_oarchive>
 {
 public:
-    typedef boost::archive::detail::common_oarchive<network_oarchive> archive_base_t;
-    friend class boost::archive::detail::common_oarchive<network_oarchive>;
-    friend class boost::archive::detail::interface_oarchive<network_oarchive>;
+    typedef boost::mpl::bool_<false> is_loading;
+    typedef boost::mpl::bool_<true> is_saving;
+    //typedef boost::archive::detail::common_oarchive<network_oarchive> archive_base_t;
+    //friend class boost::archive::detail::common_oarchive<network_oarchive>;
+    //friend class boost::archive::detail::interface_oarchive<network_oarchive>;
     friend class boost::archive::save_access;
 
     struct use_array_optimization
@@ -61,7 +63,12 @@ public:
     template<class T>
     void save_override(const T& t, int)
     {
-        this->archive_base_t::save_override(t, 0);
+        //this->archive_base_t::save_override(t, 0);
+        const_cast<T&>(t).serialize(*this, 0);
+        //boost::serialization::serialize_adl(
+        //    *this, const_cast<T &>(t), 0);
+        //BOOST_STATIC_ASSERT(sizeof(T) == 0);
+        //this->archive_base_t::save_override(t, 0);
     }
     void save_override(const uint8_t& t, int)
     {
@@ -95,7 +102,6 @@ public:
 #endif
     }
 
-
     void save_override(const boost::archive::object_id_type&, int) {}
     void save_override(const boost::archive::object_reference_type&, int) {}
     void save_override(const boost::archive::version_type&, int) {}
@@ -105,10 +111,21 @@ public:
     void save_override(const boost::archive::class_name_type&, int) {}
     void save_override(const boost::archive::tracking_type&, int) {}
 
+    template<class T>
+    network_oarchive& operator<<(T & t) {
+        save_override(t, 0);
+        return *this;
+    }
+
+    template<class T>
+    network_oarchive& operator&(T & t) {
+        return *this << t;
+    }
+
 public:
     network_oarchive(boost::asio::streambuf& sbuf)
-        : archive_base_t(boost::archive::no_header | boost::archive::no_codecvt | endian_big),
-          m_sb(sbuf)
+        //: archive_base_t(boost::archive::no_header | boost::archive::no_codecvt | endian_big),
+        : m_sb(sbuf)
     {
     }
 
@@ -117,11 +134,10 @@ private:
     boost::asio::streambuf& m_sb;
 };
 
-typedef boost::archive::detail::polymorphic_oarchive_route <
-network_oarchive > polymorphic_network_oarchive;
+typedef boost::archive::detail::polymorphic_oarchive_route<network_oarchive> polymorphic_network_oarchive;
 } // namespace vigil
 
-BOOST_SERIALIZATION_REGISTER_ARCHIVE(vigil::network_oarchive)
-BOOST_SERIALIZATION_REGISTER_ARCHIVE(vigil::polymorphic_network_oarchive)
+//BOOST_SERIALIZATION_REGISTER_ARCHIVE(vigil::network_oarchive)
+//BOOST_SERIALIZATION_REGISTER_ARCHIVE(vigil::polymorphic_network_oarchive)
 
 #endif // NETWORK_OARCHIVE_HH
