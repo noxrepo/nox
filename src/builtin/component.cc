@@ -115,7 +115,7 @@ Component_context::Component_context(const Component_name& name,
         properties = root.get_child(name);
         // populate home_path
         properties.put("home_path", p.branch_path().string());
-        // populate commandline args (already separated
+        // populate commandline args in the property tree
         const Component_argument& arg = kernel->get_argument(name);
         if (!arg.empty())
         {
@@ -144,7 +144,6 @@ Component_context::Component_context(const Component_name& name,
                 }
             }
         }
-        // TODO: populate command line args in the ptree
     }
 }
 

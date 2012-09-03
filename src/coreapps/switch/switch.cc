@@ -20,8 +20,10 @@
 #include <netinet/in.h>
 #include <stdexcept>
 #include <stdint.h>
+#include <string>
 
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 
 #include <tbb/concurrent_hash_map.h>
 
@@ -86,19 +88,19 @@ private:
 inline void
 Switch::configure()
 {
-    /*
-    BOOST_FOREACH (const std::string& arg, conf->get_arguments())
-    {
-        if (arg == "noflow")
+    if (ctxt->has("args")) {
+        BOOST_FOREACH (const std::string& arg, ctxt->get_config_list("args"))
         {
-            setup_flows = false;
-        }
-        else
-        {
-            VLOG_WARN(lg, "argument \"%s\" not supported", arg.c_str());
+            if (arg == "noflow")
+            {
+                setup_flows = false;
+            }
+            else
+            {
+                VLOG_WARN(lg, "argument \"%s\" not supported", arg.c_str());
+            }
         }
     }
-    */
     register_handler("Openflow_datapath_join_event", (boost::bind(&Switch::handle_datapath_join, this, _1)));
     register_handler("Openflow_datapath_leave_event", (boost::bind(&Switch::handle_datapath_leave, this, _1)));
     register_handler("ofp_packet_in", (boost::bind(&Switch::handle_packet_in, this, _1)));
