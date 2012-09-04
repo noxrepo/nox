@@ -1,4 +1,4 @@
-/* Copyright (c) 2008 The Board of Trustees of The Leland Stanford
+* Copyright (c) 2008 The Board of Trustees of The Leland Stanford
  * Junior University
  *
  * We are making the OpenFlow specification and associated documentation
@@ -1114,7 +1114,7 @@ inline void ofp_match::from_packet(const uint32_t in_port_, boost::asio::const_b
         return;
     }
 
-    if (dl_type() >= ethernet::ETH2_CUTOFF)
+    if (ntohs(eth->eth_type) >= ethernet::ETH2_CUTOFF)
     {
         /* This is an Ethernet II frame */
         dl_type(ntohs(eth->eth_type));
