@@ -61,6 +61,8 @@ ethernetaddr::init_from_string(const char* str)
             new_octet[i] = new_octet[i] * 16 + digit2;
             ++str;
         }
+        else
+            goto error;
 
         if (i != 5 && *str != '-' && *str != ':')
         {
