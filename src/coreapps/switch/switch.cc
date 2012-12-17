@@ -141,7 +141,7 @@ Switch::handle_packet_in(const Event& e)
 
     mac_table_map::accessor accessor;
     mac_tables.find(accessor, dp.id());
-    auto mac_table = accessor->second;
+    auto& mac_table = accessor->second;
 
     // Learn the source MAC
     if (!flow.dl_src().is_multicast())
