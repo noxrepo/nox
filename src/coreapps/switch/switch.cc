@@ -159,11 +159,11 @@ Switch::handle_packet_in(const Event& e)
     // Set up a flow if the output port is known
     if (setup_flows && out_port != -1)
     {
-        auto& fm = v1::ofp_flow_mod().match(flow).buffer_id(pi.buffer_id())
+        auto fm = v1::ofp_flow_mod().match(flow).buffer_id(pi.buffer_id())
                    .cookie(0).command(v1::ofp_flow_mod::OFPFC_ADD).idle_timeout(5)
                    .hard_timeout(v1::OFP_FLOW_PERMANENT)
                    .priority(v1::OFP_DEFAULT_PRIORITY);
-        auto& ao = v1::ofp_action_output().port(out_port);
+        auto ao = v1::ofp_action_output().port(out_port);
         fm.add_action(&ao);
         dp.send(&fm);
     }
@@ -174,8 +174,8 @@ Switch::handle_packet_in(const Event& e)
         if (out_port == -1)
             out_port = v1::ofp_phy_port::OFPP_FLOOD;
 
-        auto& po = v1::ofp_packet_out().in_port(pi.in_port());
-        auto& ao = v1::ofp_action_output().port(out_port);
+        auto po = v1::ofp_packet_out().in_port(pi.in_port());
+        auto ao = v1::ofp_action_output().port(out_port);
         po.add_action(&ao);
 
         if (pi.buffer_id() == UINT32_MAX)
