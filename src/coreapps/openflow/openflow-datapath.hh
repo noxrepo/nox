@@ -54,7 +54,7 @@ public:
     }
 
     void close() const;
-    void send(const v1::ofp_msg*);
+    size_t send(const v1::ofp_msg*);
 
     bool operator==(const Openflow_datapath& that) const
     {
@@ -115,8 +115,8 @@ private:
     std::unique_ptr<boost::asio::streambuf> rx_buf;
     std::unique_ptr<boost::asio::streambuf> tx_buf_active;
     std::unique_ptr<boost::asio::streambuf> tx_buf_pending;
-    std::unique_ptr<network_oarchive> oa;
     std::unique_ptr<network_oarchive> oa_active;
+    std::unique_ptr<network_oarchive> oa_pending;
     network_iarchive ia;
     bool is_sending;
 
@@ -136,7 +136,7 @@ private:
     std::string to_string();
 };
 
-std::size_t hash_value(const Openflow_datapath&);
+size_t hash_value(const Openflow_datapath&);
 
 } // namespace openflow
 } // namespace vigil
