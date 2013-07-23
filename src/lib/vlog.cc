@@ -116,7 +116,7 @@ vlog()
     static Vlog* the_vlog = new Vlog();
     return *the_vlog;
 }
-
+
 typedef hash_map<std::string, Vlog::Module> Name_to_module;
 typedef hash_map<Vlog::Level*, Vlog::Module> Cache_map;
 
@@ -507,7 +507,7 @@ Vlog::unregister_cache(Level* cached_min_level)
     bool deleted = pimpl->min_level_caches.erase(cached_min_level);
     assert(deleted);
 }
-
+
 #define VLOG_MODULE_DO_LOG(LEVEL)                       \
     if (is_enabled(LEVEL)) {                            \
         int save_errno = errno;                         \
