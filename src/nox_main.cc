@@ -328,7 +328,7 @@ int main(int argc, char *argv[])
 #endif
             {"help",        no_argument, 0, 'h'},
             {"version",     no_argument, 0, 'V'},
-            {0, 0, 0, 0},
+            {0, 0, 0, 0}
         };
         static string short_options
         (long_options_to_short_options(long_options));

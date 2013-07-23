@@ -2161,7 +2161,7 @@ public:
     enum ofp_port_mod_failed_code
     {
         OFPPMFC_BAD_PORT,            /* Specified port does not exist. */
-        OFPPMFC_BAD_HW_ADDR,         /* Specified hardware address is wrong. */
+        OFPPMFC_BAD_HW_ADDR          /* Specified hardware address is wrong. */
     };
 
     /* ofp_error msg 'code' values for OFPET_QUEUE_OP_FAILED. 'data' contains

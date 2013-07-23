@@ -87,7 +87,7 @@ Vlog::get_level_val(const char* name)
 static const char* facility_names[Vlog::N_LEVELS] =
 {
     "syslog",
-    "console",
+    "console"
 };
 
 const char*
