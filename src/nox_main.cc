@@ -38,7 +38,7 @@
  *
  * ... Write a nice intro here ...
  *
- * \section prog-model-threading Multi-threaded 
+ * \section prog-model-threading Multi-threaded
  *
  * \section prog-model-async Asynchronous Programming
  * \subsection prog-model-async-c C++
@@ -48,7 +48,6 @@
  * \subsection prog-model-events-creating Creating New Events
  *
  */
-
 
 #include "config.h"
 
@@ -269,8 +268,8 @@ static void finish_booting(Kernel*, const Application_list&);
 boost::function<void()> post_shutdown;
 void shutdown(int param)
 {
-	VLOG_ERR(lg, "About to shut down on signal %d", param);
-	post_shutdown();
+    VLOG_ERR(lg, "About to shut down on signal %d", param);
+    post_shutdown();
 }
 
 int main(int argc, char *argv[])
@@ -329,7 +328,7 @@ int main(int argc, char *argv[])
 #endif
             {"help",        no_argument, 0, 'h'},
             {"version",     no_argument, 0, 'V'},
-            {0, 0, 0, 0},
+            {0, 0, 0, 0}
         };
         static string short_options
         (long_options_to_short_options(long_options));
@@ -532,27 +531,27 @@ int main(int argc, char *argv[])
         Event_dispatcher* ed =
             dynamic_cast<Event_dispatcher*>(event_dispatcher_context->get_instance());
 
-		Shutdown_event shutdown_event;
-		post_shutdown = 
-				boost::bind(&Event_dispatcher::post, ed, shutdown_event);
-		signal(SIGTERM, shutdown);
-		signal(SIGINT, shutdown);
-		signal(SIGHUP, shutdown);
-		signal(SIGABRT, shutdown);
+        Shutdown_event shutdown_event;
+        post_shutdown =
+                boost::bind(&Event_dispatcher::post, ed, shutdown_event);
+        signal(SIGTERM, shutdown);
+        signal(SIGINT, shutdown);
+        signal(SIGHUP, shutdown);
+        signal(SIGABRT, shutdown);
 
         if (daemon_flag)
         {
             /* PID file will be removed just before the daemon
                exits. Register to the shutdown event to catch SIGTERM,
                SIGINT, and SIGHUP based exits. */
-			ed->register_handler(Shutdown_event::static_get_name(),
-					boost::bind(&remove_pid_file, pid_file, _1),
-					9998);
+            ed->register_handler(Shutdown_event::static_get_name(),
+                    boost::bind(&remove_pid_file, pid_file, _1),
+                    9998);
         }
 
         if (ed) {
             ed->join_all();
-		}
+        }
 
     }
     catch (const runtime_error& e)

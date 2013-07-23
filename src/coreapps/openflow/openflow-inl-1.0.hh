@@ -346,7 +346,6 @@ inline void ofp_vendor::register_factory(uint32_t t, ofp_vendor::factory_t f)
     factory_map[t] = f;
 }
 
-
 // Serialization
 template<class Archive>
 inline void ofp_packet_out::serialize(Archive& ar, const unsigned int)
@@ -1084,7 +1083,6 @@ inline void ofp_table_stats_request::serialize(Archive& ar, const unsigned int)
     if (Archive::is_saving::value) ar& bs::base_object<ofp_stats_request>(*this);
 }
 
-
 // Misc
 template<typename T>
 inline const T* ofp_match::cast_check(boost::asio::const_buffer packet) const
@@ -1235,8 +1233,6 @@ inline bool ofp_match::operator!=(const ofp_match& that)
     return !(*this == that);
 }
 
-
-
 // Hash
 
 inline std::size_t hash_value(const ofp_match& match)
