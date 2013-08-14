@@ -22,7 +22,7 @@ def main():
             dirs.remove('.git')
 
         for file in files:
-            if file[-3:] != '.js':
+            if file[-3:] not in ('.js', '.hh', '.cc'):
                 continue
 
             fn = os.path.join(root, file)

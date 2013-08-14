@@ -269,7 +269,7 @@ vlog_server_fsm(Vlog& vlog, int fd)
     }
     /* TODO: Callback the same function when fd is ready */
 }
-
+
 /* Client socket. */
 
 Vlog_client_socket::Vlog_client_socket()
@@ -427,7 +427,7 @@ Vlog_client_socket::target()
 {
     return path;
 }
-
+
 /* Helper functions. */
 
 /* Stores in '*un' a sockaddr_un that refers to file 'name'.  Stores in
