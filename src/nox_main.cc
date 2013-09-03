@@ -160,9 +160,11 @@ void usage(const char* program_name)
            "  -i pssl:[IP]:[PORT]:KEY:CERT:CONTROLLER_CA_CERT\n"
            "                          listen to SSL PORT on interface specified by IP\n"
            "                          (default: 0.0.0.0:%d)\n"
+#ifdef UNRELIABLE_ENABLED
            "\nNetwork control options (must also specify an interface):\n"
-           "  -u, --unreliable        do not reconnect to interfaces on error\n",
-           program_name, program_name, 6633, 6633);
+           "  -u, --unreliable        do not reconnect to interfaces on error\n"
+#endif // UNRELIABLE_ENABLED
+           , program_name, program_name, 6633, 6633);
     //program_name, program_name, OFP_TCP_PORT, OFP_SSL_PORT);
     printf("\nOther options:\n"
            "  -c, --conf=FILE         set configuration file\n"
@@ -289,7 +291,9 @@ int main(int argc, char *argv[])
     const char* pid_file = "/var/run/nox.pid";
     const char* info_file = "./nox.info";
     unsigned int n_threads = 1;
+#ifdef UNRELIABLE_ENABLED
     bool reliable = true;
+#endif // UNRELIABLE_ENABLED
     bool daemon_flag = false;
     list<string> interfaces;
 
@@ -312,7 +316,9 @@ int main(int argc, char *argv[])
         static struct option long_options[] =
         {
             {"daemon",      no_argument, 0, 'd'},
+#ifdef UNRELIABLE_ENABLED
             {"unreliable",  no_argument, 0, 'u'},
+#endif // UNRELIABLE_ENABLED
 
             {"interface",   required_argument, 0, 'i'},
 
@@ -346,9 +352,11 @@ int main(int argc, char *argv[])
             daemon_flag = true;
             break;
 
+#ifdef UNRELIABLE_ENABLED
         case 'u':
             reliable = false;
             break;
+#endif // UNRELIABLE_ENABLED
 
         case 'i':
             interfaces.push_back(optarg);
