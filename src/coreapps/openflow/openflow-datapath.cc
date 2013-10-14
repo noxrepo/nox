@@ -67,7 +67,7 @@ Openflow_datapath::handshake_state_desc[Openflow_datapath::HANDSHAKE_NSTATES] =
     "checking switch auth"
 };
 
-std::size_t hash_value(const Openflow_datapath& dp)
+size_t hash_value(const Openflow_datapath& dp)
 {
     boost::hash<datapathid> h;
     return h(dp.id());
@@ -78,10 +78,10 @@ Openflow_datapath::Openflow_datapath(Openflow_manager& mgr)
       header_set(false), hello_received(false), features_req_sent(false),
       probe_interval(15),//, idle_timer(io_service),
       rx_buf(new ba::streambuf(512 * 1024)),
-      tx_buf_active(new ba::streambuf(4 * 1024 * 1024)),
-      tx_buf_pending(new ba::streambuf(4 * 1024 * 1024)),
-      oa(new network_oarchive(*tx_buf_pending)),
+      tx_buf_active(new ba::streambuf(1024 * 1024)),
+      tx_buf_pending(new ba::streambuf(1024 * 1024)),
       oa_active(new network_oarchive(*tx_buf_active)),
+      oa_pending(new network_oarchive(*tx_buf_pending)),
       ia(*rx_buf),
       is_sending(false)
 {
@@ -179,7 +179,7 @@ Openflow_datapath::send_cb(const size_t& bytes_transferred)
 
     if (tx_buf_active->size() == 0 && tx_buf_pending->size() > 0) {
         tx_buf_active.swap(tx_buf_pending);
-        oa.swap(oa_active);
+        oa_active.swap(oa_pending);
     }
 
     if (tx_buf_active->size() > 0)
@@ -188,20 +188,25 @@ Openflow_datapath::send_cb(const size_t& bytes_transferred)
         is_sending = false;
 }
 
-void
+size_t
 Openflow_datapath::send(const v1::ofp_msg* msg)
 {
     VLOG_DBG(lg, "sending %s", msg->name());
     assert(msg->length() <= v1::OFP_MAX_MSG_BYTES);
+    
+    // Return 0 if not enough space in the buffer
+    if (msg->length() > tx_buf_pending->max_size() - tx_buf_pending->size()) {
+        return 0;
+    }
 
-    const_cast<v1::ofp_msg*>(msg)->factory(*oa, NULL);
+    const_cast<v1::ofp_msg*>(msg)->factory(*oa_pending, NULL);
 
     if (is_sending)
-        return;
+        return msg->length();
 
     if (tx_buf_active->size() == 0 && tx_buf_pending->size() > 0) {
         tx_buf_active.swap(tx_buf_pending);
-        oa.swap(oa_active);
+        oa_active.swap(oa_pending);
     }
 
     if (tx_buf_active->size() > 0)
@@ -209,6 +214,8 @@ Openflow_datapath::send(const v1::ofp_msg* msg)
         is_sending = true;
         connection->send(*tx_buf_active);
     }
+
+    return msg->length();
 }
 
 void

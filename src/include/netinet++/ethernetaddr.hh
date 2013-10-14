@@ -48,12 +48,43 @@
 #include <string>
 #include <netinet/in.h>
 #include <stdint.h>
+#include "string.hh"
 
 #include <boost/serialization/binary_object.hpp>
 #include <boost/serialization/is_bitwise_serializable.hpp>
 #include <boost/functional/hash.hpp>
 
 #include "xtoxll.h"
+
+namespace
+{
+
+//-----------------------------------------------------------------------------
+//                             hexit_value helper routine
+//-----------------------------------------------------------------------------
+int
+hexit_value(int c)
+{
+    if (c >= '0' && c <= '9')
+    {
+        return c - '0';
+    }
+    else if (c >= 'a' && c <= 'f')
+    {
+        return c - 'a' + 0xa;
+    }
+    else if (c >= 'A' && c <= 'F')
+    {
+        return c - 'A' + 0xa;
+    }
+    else
+    {
+        return -1;
+    }
+}
+//-----------------------------------------------------------------------------
+
+} // namespace
 
 namespace vigil
 {
@@ -121,12 +152,12 @@ struct ethernetaddr
     uint8_t     octet[ethernetaddr::LEN];
 
     //-------------------------------------------------------------------------
-    // Constructors/Detructor
+    // Constructors/Destructor
     //-------------------------------------------------------------------------
     ethernetaddr();
-    ethernetaddr(const  char*);
-    ethernetaddr(const  unsigned char[LEN]);
-    ethernetaddr(uint64_t  id);
+    ethernetaddr(const char*);
+    ethernetaddr(const unsigned char[LEN]);
+    ethernetaddr(uint64_t id);
     ethernetaddr(const std::string&);
     ethernetaddr(const ethernetaddr&);
 
@@ -257,6 +288,17 @@ inline
 ethernetaddr::ethernetaddr(const std::string& text)
 {
     init_from_string(text.c_str());
+}
+//-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
+inline
+std::string
+ethernetaddr::string() const
+{
+    return vigil::string_format("%02x:%02x:%02x:%02x:%02x:%02x",
+                                octet[0], octet[1], octet[2],
+                                octet[3], octet[4], octet[5]);
 }
 //-----------------------------------------------------------------------------
 
@@ -469,6 +511,8 @@ ethernetaddr::is_zero() const
     return ((*(uint32_t*)octet) == 0) && ((*(uint16_t*)(octet + 4)) == 0);
 }
 //-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
 template <class Archive>
 inline
 void
@@ -476,6 +520,54 @@ ethernetaddr::serialize(Archive& ar, const unsigned int)
 {
     ar& boost::serialization::make_binary_object(octet, sizeof octet);
 }
+//-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
+inline
+void
+ethernetaddr::init_from_string(const char* str)
+{
+    uint8_t new_octet[LEN];
+
+    for (int i = 0; i < 6; i++)
+    {
+        int digit1 = hexit_value(*str++);
+        if (digit1 < 0)
+        {
+            goto error;
+        }
+        new_octet[i] = digit1;
+
+        int digit2 = hexit_value(*str);
+        if (digit2 >= 0)
+        {
+            new_octet[i] = new_octet[i] * 16 + digit2;
+            ++str;
+        }
+        else
+            goto error;
+
+        if (i != 5 && *str != '-' && *str != ':')
+        {
+            goto error;
+        }
+        if (i < 5)
+        {
+            ++str;
+        }
+    }
+    if (*str)
+    {
+        goto error;
+    }
+    memcpy(octet, new_octet, LEN);
+    return;
+
+error:
+    throw bad_ethernetaddr_cast();
+}
+//-----------------------------------------------------------------------------
+
 //-----------------------------------------------------------------------------
 inline
 std::ostream&
@@ -486,10 +578,12 @@ operator <<(std::ostream& os, const ethernetaddr& addr_in)
 }
 //-----------------------------------------------------------------------------
 
+//-----------------------------------------------------------------------------
 inline std::size_t hash_value(const ethernetaddr& ethaddr)
 {
     return boost::hash_range(ethaddr.octet, ethaddr.octet + sizeof ethaddr.octet);
 }
+//-----------------------------------------------------------------------------
 
 } // namespace vigil
 

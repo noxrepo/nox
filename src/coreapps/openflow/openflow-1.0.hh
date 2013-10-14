@@ -86,7 +86,6 @@ boost::archive::polymorphic_iarchive&,
 boost::archive::polymorphic_oarchive&
 > ofp_archive_type;
 
-
 //
 // 1. OpenFlow Header
 
@@ -182,7 +181,6 @@ private:
     static factory_map_t factory_map;
 };
 
-
 //
 // 2. Common Structures
 //    Port, Queue, Flow Match, Flow Action
@@ -904,7 +902,6 @@ private:
     static factory_map_t factory_map;
 };
 
-
 //
 // 3. Controller to Switch Messages
 //    Handshake, Switch Configuration, Modify State, Queue Configuration,
@@ -1929,7 +1926,6 @@ public:
     }
 };
 
-
 //
 // 4. Asynchronous Messages
 //    ofp_packet_in, ofp_flow_removed, ofp_port_status, ofp_error
@@ -2161,7 +2157,7 @@ public:
     enum ofp_port_mod_failed_code
     {
         OFPPMFC_BAD_PORT,            /* Specified port does not exist. */
-        OFPPMFC_BAD_HW_ADDR,         /* Specified hardware address is wrong. */
+        OFPPMFC_BAD_HW_ADDR          /* Specified hardware address is wrong. */
     };
 
     /* ofp_error msg 'code' values for OFPET_QUEUE_OP_FAILED. 'data' contains
@@ -2196,7 +2192,6 @@ private:
     std::size_t data_size_;
 };
 
-
 //
 // 5. Symmetric Messages
 //    ofp_hello, ofp_echo_request, ofp_echo_reply,
