@@ -136,9 +136,9 @@ Component_context::Component_context(const Component_name& name,
                 BOOST_FOREACH(const std::string& str, args)
                 {
                     std::string key("args.");
-                    // use comma as the separator
+                    // use equals sign as the separator
                     std::vector<std::string> kv;
-                    boost::split(kv, str, boost::is_any_of(","));
+                    boost::split(kv, str, boost::is_any_of("="));
                     key += kv[0];
                     properties.put(key, kv.size() > 1 ? kv[1] : "");
                 }
