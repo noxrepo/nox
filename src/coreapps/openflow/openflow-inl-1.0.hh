@@ -1191,8 +1191,8 @@ inline void ofp_match::from_packet(const uint32_t in_port_, boost::asio::const_b
                 if (!icmp)
                     return;
                 packet = packet + sizeof(icmp_header);
-                tp_src(ntohs(icmp->icmp_type));
-                tp_dst(ntohs(icmp->icmp_code));
+                tp_src(icmp->icmp_type);
+                tp_dst(icmp->icmp_code);
             }
         }
     }
