@@ -128,6 +128,8 @@ Openflow_datapath::close() const
 void
 Openflow_datapath::close_cb()
 {
+    Openflow_datapath_leave_event dple(shared_from_this());
+    manager.dispatch(dple);
 }
 
 void
