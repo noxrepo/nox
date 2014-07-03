@@ -27,9 +27,6 @@
 #include "connection.hh"
 #include "openflow-manager.hh"
 #include "netinet++/datapathid.hh"
-#include "network_iarchive.hh"
-#include "network_oarchive.hh"
-#include <openflow/openflow-1.0.hh>
 
 namespace vigil
 {
@@ -44,6 +41,7 @@ class Openflow_datapath
 {
 public:
     Openflow_datapath(Openflow_manager&);
+    
     ~Openflow_datapath();
 
     void set_connection(boost::shared_ptr<Connection>);
@@ -53,9 +51,6 @@ public:
         return id_;
     }
 
-    void close() const;
-    size_t send(const v1::ofp_msg*);
-
     bool operator==(const Openflow_datapath& that) const
     {
         return id_ == that.id_;
@@ -64,6 +59,73 @@ public:
     {
         return id_ != that.id_;
     }
+
+    void set_role(enum ofp_controller_role new_role)
+    {
+        role = new_role;
+    }
+
+    enum ofp_controller_role get_role(){
+        return role;
+    }
+
+    bool is_master()
+    {
+        return role == OFPCR_ROLE_MASTER;
+    }
+
+    bool is_slave()
+    {
+        return role == OFPCR_ROLE_SLAVE;
+    }
+
+    const std::string get_remote_ip(void)
+    {
+        return connection->get_remote_ip();
+    }
+
+    void close() const;
+    
+    size_t send_of_buf(struct ofpbuf *msg);
+
+    void dump_of_buf(struct ofpbuf *msg);
+
+    int send_echo_reply(const Event& e);
+    
+    int send_packet_out(uint32_t buf_id, void *buf, 
+                            int buf_size, uint32_t in_port, uint32_t out_port);
+
+private:
+    void close_cb();
+
+    void recv_cb(const size_t&);
+
+    void send_cb(const size_t&);
+    
+    Disposition handle_handshake(uint8_t* data, const size_t len);
+
+private:
+    int send_common_request(enum ofpraw raw_type);
+    
+    int send_features_request();
+
+    int send_switch_config();
+
+    int send_stats_request();
+
+    int send_port_desc_request();
+
+    int send_echo_request();
+
+    int send_barrier_request();
+
+    int send_hello();
+
+    int send_hello_error();
+
+    int send_error(enum ofperr error, const struct ofp_header *request);
+
+    void handle_message(uint8_t* data, const size_t len);
 
 private:
     enum Datapath_state
@@ -92,48 +154,36 @@ private:
     static std::string datapath_state_desc[DATAPATH_NSTATES];
     static std::string handshake_state_desc[HANDSHAKE_NSTATES];
 
-    /* Underlying connection to the datapath */
+private:
+    enum ofp_controller_role role;
+
     Openflow_manager& manager;
     boost::shared_ptr<Connection> connection;
 
-    // ofp_header to hold the header temporarily
-    bool header_set;
+    bool handshake_done;
+
     bool hello_received;
     bool features_req_sent;
-    v1::ofp_msg ofm;
-    v1::ofp_features_reply features;
 
-    // ID of joining switch
+    int of_version;
+
     datapathid id_;
 
-    // Number of seconds before probing an idle datapath
     int probe_interval;
     //boost::asio::deadline_timer idle_timer;
 
-    // Send and receive buffers
     boost::mutex tx_mutex;
     std::unique_ptr<boost::asio::streambuf> rx_buf;
     std::unique_ptr<boost::asio::streambuf> tx_buf_active;
     std::unique_ptr<boost::asio::streambuf> tx_buf_pending;
-    std::unique_ptr<network_oarchive> oa_active;
-    std::unique_ptr<network_oarchive> oa_pending;
-    network_iarchive ia;
+
     bool is_sending;
 
-    void close_cb();
-    void recv_cb(const size_t&);
-    void send_cb(const size_t&);
+    boost::mutex send_mutex;
+    
+    char recv_buff[v13::OFP_MAX_MSG_BYTES];
 
-    void handle_message(const v1::ofp_msg* msg);
-    Disposition handle_disconnect(const Event&);
-    Disposition handle_error_msg(const Event&);
-    Disposition handle_handshake(const Event&);
-
-    /*
-    void check_idle(const boost::system::error_code& =
-        boost::system::error_code());
-    */
-    std::string to_string();
+    char* recv_start;
 };
 
 size_t hash_value(const Openflow_datapath&);

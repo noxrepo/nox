@@ -24,6 +24,8 @@
 
 #include "event.hh"
 #include "openflow-datapath.hh"
+#include "port.hh"
+
 
 namespace vigil
 {
@@ -33,17 +35,116 @@ namespace openflow
 class Openflow_event : public Event
 {
 public:
-    Openflow_event(Openflow_datapath& dp_,
-                   const v1::ofp_msg* msg_) : Event(msg_->name()), dp(dp_), msg(msg_) {}
+    Openflow_event(boost::shared_ptr<Openflow_datapath> dp_,
+        std::string name_, const struct ofp_header *oh_):
+        Event(name_),dp(dp_),oh(oh_)
+    {}
 
     ~Openflow_event() { }
 
-    Openflow_datapath& dp;
-
-    const v1::ofp_msg* msg;
+    boost::shared_ptr<Openflow_datapath> dp;
+    const struct ofp_header *oh;
 };
+
+class Openflow_datapath_join_event
+    : public Event
+{
+public:
+    Openflow_datapath_join_event(boost::shared_ptr<Openflow_datapath> dp_)
+        : Event(static_get_name()), dp(dp_) { }
+
+    static const Event_name static_get_name()
+    {
+        return "Openflow_datapath_join_event";
+    }
+
+    boost::shared_ptr<Openflow_datapath> dp;
+};
+
+class Openflow_datapath_leave_event
+    : public Event
+{
+public:
+    Openflow_datapath_leave_event(boost::shared_ptr<Openflow_datapath> dp_)
+        : Event(static_get_name()), dp(dp_) { }
+
+    static const Event_name static_get_name()
+    {
+        return "Openflow_datapath_leave_event";
+    }
+
+    boost::shared_ptr<Openflow_datapath> dp;
+};
+
+
+class Openflow_request_controller_event
+    : public Event
+{
+public:
+    Openflow_request_controller_event(boost::shared_ptr<Openflow_datapath> dp_)
+        : Event(static_get_name()), dp(dp_){ }
+
+    static const Event_name static_get_name()
+    {
+        return "Openflow_request_controller_event";
+    }
+	
+	boost::shared_ptr<Openflow_datapath> dp;
+};
+
+
+class Openflow_datapath_new_role_event
+    : public Event
+{
+public:
+    Openflow_datapath_new_role_event(boost::shared_ptr<Openflow_datapath> dp_, enum ofp_controller_role role_)
+        : Event(static_get_name()), dp(dp_), role(role_){ }
+
+    static const Event_name static_get_name()
+    {
+        return "Openflow_datapath_new_role_event";
+    }
+
+    boost::shared_ptr<Openflow_datapath> dp;
+    enum ofp_controller_role role;
+};
+
+class Openflow_datapath_error_slave_role_event
+    : public Event
+{
+public:
+    Openflow_datapath_error_slave_role_event(boost::shared_ptr<Openflow_datapath> dp_)
+        : Event(static_get_name()), dp(dp_) { }
+
+    static const Event_name static_get_name()
+    {
+        return "Openflow_datapath_error_slave_role_event";
+    }
+
+    boost::shared_ptr<Openflow_datapath> dp;
+};
+
+class Packet_in_event : public Openflow_event
+{
+public:
+    Packet_in_event(boost::shared_ptr<Openflow_datapath> dp_,
+        std::string name_, const struct ofp_header *oh_):
+        Openflow_event(dp_, name_, oh_)
+    {}
+
+    ~Packet_in_event() 
+    {}
+    struct flow flow;
+    struct ofputil_packet_in pi;
+};
+
 
 } // namespace openflow
 } // namespace vigil
+
+
+std::string get_eventname_from_type(enum ofptype of_type);
+
+std::string get_eventname_from_msg(const struct ofpbuf *msg);
 
 #endif  // -- OFP_MSG_EVENT_HH

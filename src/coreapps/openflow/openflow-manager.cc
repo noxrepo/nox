@@ -31,9 +31,6 @@
 #include <boost/timer.hpp>
 
 #include "assert.hh"
-#include "openflow-1.0.hh"
-#include "openflow-datapath-join-event.hh"
-#include "openflow-datapath-leave-event.hh"
 #include "openflow-event.hh"
 #include "new-connection-event.hh"
 #include "shutdown-event.hh"
@@ -49,10 +46,6 @@ static Vlog_module lg("openflow-manager");
 Openflow_manager::Openflow_manager(const Component_context* ctxt)
     : Component(ctxt)
 {
-    VLOG_DBG(lg, "Compiled with OpenFlow 0x%x%x %s\n",
-             (v1::OFP_VERSION >> 4) & 0x0f,
-             (v1::OFP_VERSION & 0x0f),
-             (v1::OFP_VERSION & 0x80) ? "(exp)" : "");
 }
 
 void
@@ -62,16 +55,20 @@ Openflow_manager::configure()
     register_default_handlers();
     register_handler<Shutdown_event>(
         boost::bind(&Openflow_manager::handle_shutdown, this, _1));
+}
 
-    v1::ofp_msg::init();
-    v1::ofp_stats_request::init();
-    v1::ofp_stats_reply::init();
-    v1::ofp_vendor_stats_request::init();
-    v1::ofp_vendor_stats_reply::init();
-    v1::ofp_action::init();
-    v1::ofp_action_vendor::init();
-    v1::ofp_queue_prop::init();
-    v1::ofp_vendor::init();
+bool Openflow_manager::get_dp_from_dpid(const datapathid &dpid, boost::shared_ptr<Openflow_datapath> &dp)
+{
+    Datapath_map::iterator it = connected_dps.find(dpid);
+    if (it != connected_dps.end())
+    {
+        dp = it->second;
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 void
@@ -79,43 +76,25 @@ Openflow_manager::register_default_events()
 {
     register_event<Openflow_datapath_join_event>();
     register_event<Openflow_datapath_leave_event>();
-
-    // TODO: clean this up
-    register_event("ofp_aggregate_stats_reply");
-    register_event("ofp_aggregate_stats_request");
-    register_event("ofp_barrier_reply");
-    register_event("ofp_barrier_request");
-    register_event("ofp_desc_stats_reply");
-    register_event("ofp_desc_stats_request");
-    register_event("ofp_echo_reply");
-    register_event("ofp_echo_request");
-    register_event("ofp_error_msg");
-    register_event("ofp_features_reply");
-    register_event("ofp_flow_mod");
-    register_event("ofp_flow_removed");
-    register_event("ofp_flow_stats_reply");
-    register_event("ofp_flow_stats_request");
-    register_event("ofp_get_config_reply");
-    register_event("ofp_get_config_request");
-    register_event("ofp_hello");
-    register_event("ofp_packet_in");
-    register_event("ofp_packet_out");
-    register_event("ofp_port_mod");
-    register_event("ofp_port_stats_reply");
-    register_event("ofp_port_stats_request");
-    register_event("ofp_port_status");
-    register_event("ofp_queue_get_config_reply");
-    register_event("ofp_queue_get_config_request");
-    register_event("ofp_queue_stats_reply");
-    register_event("ofp_queue_stats_request");
-    register_event("ofp_set_config");
-    register_event("ofp_stats_reply");
-    register_event("ofp_stats_request");
-    register_event("ofp_table_stats_reply");
-    register_event("ofp_table_stats_request");
-    register_event("ofp_vendor");
-    register_event("ofp_vendor_stats_reply");
-    register_event("ofp_vendor_stats_request");
+    register_event<Openflow_datapath_new_role_event>();
+    register_event<Openflow_datapath_error_slave_role_event>();
+    register_event<Openflow_request_controller_event>();
+    register_event(get_eventname_from_type(OFPTYPE_HELLO));
+    register_event(get_eventname_from_type(OFPTYPE_ERROR));
+    register_event(get_eventname_from_type(OFPTYPE_ECHO_REQUEST));
+    register_event(get_eventname_from_type(OFPTYPE_ECHO_REPLY));
+    register_event(get_eventname_from_type(OFPTYPE_FEATURES_REPLY));
+    register_event(get_eventname_from_type(OFPTYPE_SET_CONFIG));
+    register_event(get_eventname_from_type(OFPTYPE_GET_CONFIG_REPLY));
+    register_event(get_eventname_from_type(OFPTYPE_PACKET_IN));
+    register_event(get_eventname_from_type(OFPTYPE_FLOW_REMOVED));
+    register_event(get_eventname_from_type(OFPTYPE_PORT_DESC_STATS_REPLY));
+    register_event(get_eventname_from_type(OFPTYPE_PORT_STATUS));
+    register_event(get_eventname_from_type(OFPTYPE_ROLE_REPLY));
+    register_event(get_eventname_from_type(OFPTYPE_GET_ASYNC_REPLY));
+    register_event(get_eventname_from_type(OFPTYPE_BARRIER_REPLY));
+    register_event(get_eventname_from_type(OFPTYPE_QUEUE_GET_CONFIG_REPLY));
+    register_event(get_eventname_from_type(OFPTYPE_TENXT_GW_FDBS_REP));
 }
 
 void
@@ -127,14 +106,19 @@ Openflow_manager::register_default_handlers()
         boost::bind(&Openflow_manager::handle_datapath_join, this, _1));
     register_handler<Openflow_datapath_leave_event>(
         boost::bind(&Openflow_manager::handle_datapath_leave, this, _1));
-    register_handler("ofp_echo_request",
-                     boost::bind(&Openflow_manager::handle_echo_request, this, _1));
+    register_handler(get_eventname_from_type(OFPTYPE_ECHO_REQUEST),
+        boost::bind(&Openflow_manager::handle_echo_request, this, _1));
+    register_handler(get_eventname_from_type(OFPTYPE_ROLE_REPLY),
+        boost::bind(&Openflow_manager::handle_role_reply, this, _1));
+    register_handler(get_eventname_from_type(OFPTYPE_ERROR),
+        boost::bind(&Openflow_manager::handle_error, this, _1));
 }
 
 Disposition
 Openflow_manager::handle_shutdown(const Event& e)
 {
     //const Shutdown_event& se = assert_cast<const Shutdown_event&>(e);
+    boost::lock_guard<boost::mutex> lock(dp_mutex);
     BOOST_FOREACH(auto conn, connecting_dps)
     {
         conn->close();
@@ -173,6 +157,7 @@ Openflow_manager::handle_datapath_leave(const Event& e)
     auto dle = assert_cast<const Openflow_datapath_leave_event&>(e);
     boost::lock_guard<boost::mutex> lock(dp_mutex);
     connected_dps.erase(dle.dp->id());
+    connecting_dps.erase(dle.dp);
     return CONTINUE;
 }
 
@@ -180,11 +165,62 @@ Disposition
 Openflow_manager::handle_echo_request(const Event& e)
 {
     auto ofe = assert_cast<const Openflow_event&>(e);
-    auto req = assert_cast<const v1::ofp_echo_request*>(ofe.msg);
-    v1::ofp_echo_reply rep(*req);
-    ofe.dp.send(&rep);
+    ofe.dp->send_echo_reply(e);
     return STOP;
 }
+
+Disposition Openflow_manager::handle_role_reply(const Event &e)
+{
+    auto ofe = assert_cast<const Openflow_event &>(e);
+    auto &dp = ofe.dp;
+
+	enum ofp_controller_role role;
+    struct ofputil_role_request rr;
+    enum ofperr error;
+
+    error = ofputil_decode_role_message(ofe.oh, &rr);
+    if (error)
+    {
+        lg.err("decode role msg failed");
+        return CONTINUE;
+    }
+
+    role = (ofp_controller_role)rr.role;
+    if(role != OFPCR_ROLE_NOCHANGE)
+    {
+        dp->set_role(role);
+        lg.info("dispatch new role event");
+        Openflow_datapath_new_role_event odnre(dp, role);
+        dispatch(odnre);
+    }
+
+    return CONTINUE;
+}
+
+
+Disposition
+Openflow_manager::handle_vendor(const Event& e)
+{
+    return CONTINUE;
+}
+
+Disposition
+Openflow_manager::handle_error(const Event &e)
+{
+    auto ofe = assert_cast<const Openflow_event &>(e);
+	struct ofpbuf payload;
+    enum ofperr error;
+
+    error = ofperr_decode_msg(ofe.oh, &payload);
+    if (error == OFPERR_OFPBRC_IS_SLAVE)
+    {
+        Openflow_datapath_error_slave_role_event odesre(ofe.dp);
+        dispatch(odesre);
+    }
+
+	return CONTINUE;
+}
+
 
 REGISTER_COMPONENT(Simple_component_factory<Openflow_manager>, Openflow_manager);
 

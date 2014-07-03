@@ -38,10 +38,7 @@ openflow_manager_la_SOURCES =                   \
     openflow-datapath-join-event.hh             \
     openflow-datapath-leave-event.hh            \
     openflow-event.hh                           \
-    openflow-1.0.hh                             \
-    openflow-inl-1.0.hh                         \
-    openflow-defs-1.0.hh                        \
-    openflow-1.0.cc
+    openflow-event.cc                           
 
 openflow_manager_la_LDFLAGS =                   \
     $(AM_LDFLAGS) -module                       \
@@ -49,7 +46,7 @@ openflow_manager_la_LDFLAGS =                   \
 
 openflow_manager_la_DEPENDENCIES =
 
-openflow_manager_la_LIBADD =
+openflow_manager_la_LIBADD = ./libofp.a -lpthread -lssl -lrt -lm
 
 NOX_RUNTIMEFILES = meta.json
 

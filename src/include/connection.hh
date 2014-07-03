@@ -91,6 +91,7 @@ public:
     virtual void recv(boost::asio::mutable_buffers_1) = 0;
 
     virtual std::string to_string() = 0;
+    virtual const std::string get_remote_ip() = 0;
 
 protected:
     Close_callback close_cb;
@@ -128,9 +129,15 @@ public:
     virtual void send(const boost::asio::streambuf&);
     virtual void recv(boost::asio::mutable_buffers_1);
 
+    virtual const std::string get_remote_ip()
+    {
+        return remote_ip;
+    }
+
     virtual std::string to_string();
 
 private:
+    std::string remote_ip;
     boost::shared_ptr<Async_stream> stream;
     boost::asio::strand strand;
     size_t tx_bytes;

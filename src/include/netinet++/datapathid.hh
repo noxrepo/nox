@@ -155,6 +155,15 @@ inline std::size_t hash_value(const datapathid& dpid)
     return hasher(dpid.as_host());
 }
 
+struct datapathid_hash 
+{
+    std::size_t operator()(const datapathid& dpid) const
+    {
+        boost::hash<uint64_t> hasher;
+        return hasher(dpid.as_host());
+    }
+};
+
 } // namespace vigil
 
 #endif  // -- DATAPATHID_HH

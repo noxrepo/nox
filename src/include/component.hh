@@ -29,6 +29,7 @@
 #include <typeinfo>
 #include <utility>
 
+#include <boost/asio.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/function.hpp>
 #include <boost/noncopyable.hpp>
@@ -259,6 +260,14 @@ public:
 
     /* Post an event */
     void post(const Event&) const;
+    
+    /* Posts 'callback' to be called after the given 'duration' elapses.  The
+     * caller must not destroy the returned Timer, but may use it to cancel or
+     * reschedule the timer, up until the point where the timer is actually
+     * invoked. */
+    typedef boost::function<void(const boost::system::error_code& error)>Callback;
+    std::unique_ptr<boost::asio::deadline_timer>
+    post_callback(const Callback& callback, const timeval& duration);
 
 protected:
     /* Component_context to access the container */

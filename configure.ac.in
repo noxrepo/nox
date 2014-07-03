@@ -1,6 +1,6 @@
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.68])
+AC_PREREQ([2.64])
 AC_INIT([nox],[0.9.2~APPS_ID~beta],[contact@noxrepo.org])
 
 AC_USE_SYSTEM_EXTENSIONS
@@ -20,6 +20,7 @@ AH_BOTTOM([/* NOX 0.9.1~APPS_ID~beta. */
 AM_INIT_AUTOMAKE([tar-ustar -Wno-portability])
 
 # Checks for programs.
+CXXFLAGS="-g -O0"
 AC_PROG_CXX
 AC_PROG_CC
 AC_PROG_CPP
@@ -77,7 +78,7 @@ AX_BOOST_SYSTEM
 AX_BOOST_THREAD
 
 # Checks for Intel TBB library
-AX_TBB([], AC_MSG_ERROR([cannot find the Intel TBB library]))
+#AX_TBB([], AC_MSG_ERROR([cannot find the Intel TBB library]))
 
 # Doxygen configuration
 DX_HTML_FEATURE(ON)

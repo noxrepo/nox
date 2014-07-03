@@ -1,0 +1,12 @@
+.de IQ
+.  br
+.  ns
+.  IP "\\$1"
+..
+.IP "\fB\-h\fR"
+.IQ "\fB\-\-help\fR"
+Prints a brief help message to the console.
+.
+.IP "\fB\-V\fR"
+.IQ "\fB\-\-version\fR"
+Prints version information to the console.

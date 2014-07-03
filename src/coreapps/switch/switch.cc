@@ -25,7 +25,7 @@
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 
-#include <tbb/concurrent_hash_map.h>
+//#include <tbb/concurrent_hash_map.h>
 
 #include "assert.hh"
 #include "component.hh"
@@ -36,8 +36,6 @@
 #include "netinet++/ethernet.hh"
 
 #include "openflow/openflow-event.hh"
-#include "openflow/openflow-datapath-join-event.hh"
-#include "openflow/openflow-datapath-leave-event.hh"
 
 using namespace vigil;
 using namespace openflow;
@@ -76,7 +74,8 @@ private:
         }
     };
     typedef boost::unordered_map<ethernetaddr, int> mac_table;
-    typedef tbb::concurrent_hash_map<datapathid, mac_table, datapath_hasher> mac_table_map;
+    //typedef tbb::concurrent_hash_map<datapathid, mac_table, datapath_hasher> mac_table_map;
+    typedef boost::unordered_map<datapathid, mac_table> mac_table_map;
 
     mac_table_map mac_tables;
 
@@ -101,9 +100,9 @@ Switch::configure()
             }
         }
     }
-    register_handler("Openflow_datapath_join_event", (boost::bind(&Switch::handle_datapath_join, this, _1)));
-    register_handler("Openflow_datapath_leave_event", (boost::bind(&Switch::handle_datapath_leave, this, _1)));
-    register_handler("ofp_packet_in", (boost::bind(&Switch::handle_packet_in, this, _1)));
+    register_handler(Openflow_datapath_join_event::static_get_name(), (boost::bind(&Switch::handle_datapath_join, this, _1)));
+    register_handler(Openflow_datapath_leave_event::static_get_name(), (boost::bind(&Switch::handle_datapath_leave, this, _1)));
+    register_handler("Packet_in_event", (boost::bind(&Switch::handle_packet_in, this, _1)));
 }
 
 inline Disposition
@@ -125,78 +124,95 @@ Switch::handle_datapath_leave(const Event& e)
 inline Disposition
 Switch::handle_packet_in(const Event& e)
 {
+#if 0
+
     auto ofe = assert_cast<const Openflow_event&>(e);
-    auto& dp = ofe.dp;
-    auto pi = *(assert_cast<const v1::ofp_packet_in*>(ofe.msg));
-    int out_port = -1;        // Flood by default
-
-    v1::ofp_match flow;
-    flow.from_packet(pi.in_port(), pi.packet());
-
-    // Drop all LLDP packets
-    if (flow.dl_type() == ethernet::LLDP)
+    struct ofl_msg_packet_in* pi = (struct ofl_msg_packet_in*)ofe.ofp_msg;
+    
+    if (ofl_msg_unpack(ofe.ofp_msg->msg, ofe.ofp_msg->MsgSize, &ofl_msg, &xid, NULL/*ofl_exp*/))
     {
-        return CONTINUE;
+        //TODO log error
     }
-
-    mac_table_map::accessor accessor;
-    mac_tables.find(accessor, dp.id());
-    auto& mac_table = accessor->second;
-
-    // Learn the source MAC
-    if (!flow.dl_src().is_multicast())
+    else
     {
-        mac_table[flow.dl_src()] = pi.in_port();
-    }
 
-    if (!flow.dl_dst().is_multicast())
-    {
-        auto it = mac_table.find(flow.dl_dst());
-        if (it != mac_table.end())
-            out_port = it->second;
-    }
+        struct ofl_msg_packet_in *opi = (struct ofl_msg_packet_in *)ofl_msg;
+        int out_port = -1;        // Flood by default
 
-    // Set up a flow if the output port is known
-    if (setup_flows && out_port != -1)
-    {
-        auto fm = v1::ofp_flow_mod().match(flow).buffer_id(pi.buffer_id())
-                   .cookie(0).command(v1::ofp_flow_mod::OFPFC_ADD).idle_timeout(5)
-                   .hard_timeout(v1::OFP_FLOW_PERMANENT)
-                   .priority(v1::OFP_DEFAULT_PRIORITY);
-        auto ao = v1::ofp_action_output().port(out_port);
-        fm.add_action(&ao);
-        dp.send(&fm);
-    }
 
-    // Send out packet if necessary
-    if (!setup_flows || out_port == -1 || pi.buffer_id() == UINT32_MAX)
-    {
-        if (out_port == -1)
-            out_port = v1::ofp_phy_port::OFPP_FLOOD;
+        v1::ofp_match flow;
+        flow.from_packet(pi.in_port(), pi.packet());
 
-        auto po = v1::ofp_packet_out().in_port(pi.in_port());
-        auto ao = v1::ofp_action_output().port(out_port);
-        po.add_action(&ao);
-
-        if (pi.buffer_id() == UINT32_MAX)
+        // Drop all LLDP packets
+        if (flow.dl_type() == ethernet::LLDP)
         {
-            if (pi.total_len() != boost::asio::buffer_size(pi.packet()))
+            return CONTINUE;
+        }
+
+        /*mac_table_map::accessor accessor;
+        mac_tables.find(accessor, dp.id());
+        auto& mac_table = accessor->second;
+    */
+        auto& mac_table = mac_tables.find(dp.id())->second;
+
+        // Learn the source MAC
+        if (!flow.dl_src().is_multicast())
+        {
+            mac_table[flow.dl_src()] = pi.in_port();
+        }
+
+        if (!flow.dl_dst().is_multicast())
+        {
+            auto it = mac_table.find(flow.dl_dst());
+            if (it != mac_table.end())
+                out_port = it->second;
+        }
+
+        // Set up a flow if the output port is known
+        if (setup_flows && out_port != -1)
+        {
+            auto fm = v1::ofp_flow_mod().match(flow).buffer_id(pi.buffer_id())
+                       .cookie(0).command(v1::ofp_flow_mod::OFPFC_ADD).idle_timeout(5)
+                       .hard_timeout(v1::OFP_FLOW_PERMANENT)
+                       .priority(v1::OFP_DEFAULT_PRIORITY);
+            auto ao = v1::ofp_action_output().port(out_port);
+            fm.add_action(&ao);
+            dp.send(&fm);
+        }
+
+        // Send out packet if necessary
+        if (!setup_flows || out_port == -1 || pi.buffer_id() == UINT32_MAX)
+        {
+            if (out_port == -1)
+                out_port = OFPP_FLOOD;
+
+            auto po = v1::ofp_packet_out().in_port(pi.in_port());
+            auto ao = v1::ofp_action_output().port(out_port);
+            po.add_action(&ao);
+
+            if (pi.buffer_id() == UINT32_MAX)
             {
-                /* Control path didn't buffer the packet and didn't send us
-                 * the whole thing--what gives? */
-                VLOG_DBG(lg, "total_len=%u data_len=%zu\n",
-                         pi.total_len(), boost::asio::buffer_size(pi.packet()));
-                return CONTINUE;
+                if (pi.total_len() != boost::asio::buffer_size(pi.packet()))
+                {
+                    /* Control path didn't buffer the packet and didn't send us
+                     * the whole thing--what gives? */
+                    VLOG_DBG(lg, "total_len=%u data_len=%zu\n",
+                             pi.total_len(), boost::asio::buffer_size(pi.packet()));
+                    return CONTINUE;
+                }
+                po.packet(pi.packet());
             }
-            po.packet(pi.packet());
+            else
+            {
+                po.buffer_id(pi.buffer_id());
+            }
+            dp.send(&po);
         }
-        else
-        {
-            po.buffer_id(pi.buffer_id());
-        }
-        dp.send(&po);
+        return CONTINUE;
+
     }
-    return CONTINUE;
+    #endif
+   return CONTINUE;
 }
 
 REGISTER_COMPONENT(Simple_component_factory<Switch>, Switch);

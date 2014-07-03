@@ -17,6 +17,8 @@
  */
 
 #include "openflow-datapath.hh"
+#include <netinet/in.h>
+#include <endian.h>
 
 #include <config.h>
 #include <iostream>
@@ -29,12 +31,15 @@
 #include <boost/iostreams/device/array.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/timer.hpp>
+#include <boost/thread/locks.hpp>
 
 #include "assert.hh"
-#include "openflow-datapath-join-event.hh"
-#include "openflow-datapath-leave-event.hh"
 #include "openflow-event.hh"
 #include "vlog.hh"
+#include "of_nox.hh"
+
+#include <iostream>
+#include <stdlib.h>
 
 namespace vigil
 {
@@ -46,6 +51,12 @@ namespace ba = ::boost::asio;
 namespace bs = ::boost::system;
 
 static Vlog_module lg("openflow-datapath");
+
+size_t hash_value(const Openflow_datapath& dp)
+{
+    boost::hash<datapathid> h;
+    return h(dp.id());
+}
 
 std::string
 Openflow_datapath::datapath_state_desc[Openflow_datapath::DATAPATH_NSTATES] =
@@ -67,36 +78,22 @@ Openflow_datapath::handshake_state_desc[Openflow_datapath::HANDSHAKE_NSTATES] =
     "checking switch auth"
 };
 
-size_t hash_value(const Openflow_datapath& dp)
-{
-    boost::hash<datapathid> h;
-    return h(dp.id());
-}
-
 Openflow_datapath::Openflow_datapath(Openflow_manager& mgr)
-    : datapath_state(HANDSHAKE), handshake_state(HELLO), manager(mgr),
-      header_set(false), hello_received(false), features_req_sent(false),
+    : datapath_state(HANDSHAKE), handshake_state(HELLO), role(OFPCR_ROLE_EQUAL),
+      manager(mgr),
+      handshake_done(false), hello_received(false), features_req_sent(false),
       probe_interval(15),//, idle_timer(io_service),
       rx_buf(new ba::streambuf(512 * 1024)),
       tx_buf_active(new ba::streambuf(1024 * 1024)),
       tx_buf_pending(new ba::streambuf(1024 * 1024)),
-      oa_active(new network_oarchive(*tx_buf_active)),
-      oa_pending(new network_oarchive(*tx_buf_pending)),
-      ia(*rx_buf),
       is_sending(false)
 {
-    /*
-    manager.register_handler("ofp_error_msg",
-            boost::bind(&Openflow_datapath::handle_error_msg, shared_from_this(), _1));
-    manager.register_handler("ofp_features_reply",
-            boost::bind(&Openflow_datapath::handle_handshake, shared_from_this(), _1));
-    manager.register_handler("ofp_hello",
-            boost::bind(&Openflow_datapath::handle_handshake, shared_from_this(), _1));
-    */
+    recv_start = recv_buff;
 }
 
 Openflow_datapath::~Openflow_datapath()
 {
+
     VLOG_ERR(lg, "Datapath deleted");
 }
 
@@ -128,60 +125,68 @@ Openflow_datapath::close() const
 void
 Openflow_datapath::close_cb()
 {
-    Openflow_datapath_leave_event dple(shared_from_this());
-    manager.dispatch(dple);
+    hello_received = false;
+    features_req_sent = false;
+
+    if (handshake_done)
+    {
+        Openflow_datapath_leave_event dple(shared_from_this());
+        manager.dispatch(dple);
+    }
 }
 
 void
 Openflow_datapath::recv_cb(const size_t& bytes_transferred)
 {
-    VLOG_DBG(lg, "recv %zu", bytes_transferred);
     rx_buf->commit(bytes_transferred);
-    // Process all the fully received messages
-    while (rx_buf->size() >= v1::OFP_HEADER_BYTES)
+    int msg_len = bytes_transferred;
+
+    while(msg_len > 0)
     {
-        if (!header_set)
+        int buff_len = recv_start - recv_buff;  
+        int buffer_free = v13::OFP_MAX_MSG_BYTES - buff_len;
+        int l = std::min(buffer_free, msg_len);
+        
+        rx_buf->sgetn(recv_start, l);
+        recv_start += l;
+        buff_len += l;
+        msg_len -= l;
+        while (1)
         {
-            ofm.clear();
-            ia >> ofm;
-            header_set = true;
+            if (buff_len < v13::OFP_HEADER_BYTES)
+            {
+                break;
+            }
+
+            struct ofp_header* oh = (struct ofp_header *)recv_buff;
+            uint32_t of_len = ntohs(oh->length);
+            if (of_len > buff_len)
+            {
+                break;
+            }
+
+            handle_message((uint8_t*)recv_buff, of_len);
+            memmove(recv_buff, recv_buff + of_len, buff_len - of_len);
+            buffer_free -= of_len;
         }
-
-        assert(ofm.length() != 0 && ofm.length() <= v1::OFP_MAX_MSG_BYTES);
-
-        // Have not yet received the whole message
-        if (rx_buf->size() < ofm.length() - v1::OFP_HEADER_BYTES)
-        {
-            break;
-        }
-
-        header_set = false;
-
-        // Raw memory to construct ofp* object in place.
-        char raw_buf[v1::OFP_MAX_MSG_BYTES];
-        v1::ofp_msg* msg = reinterpret_cast<v1::ofp_msg*>(raw_buf);
-
-        ofm.factory(ia, msg);
-
-        handle_message(msg);
     }
 
-    connection->recv(
-        rx_buf->prepare(rx_buf->max_size() - rx_buf->size())
+    connection->recv(rx_buf->prepare(rx_buf->max_size() - rx_buf->size())
     );
 }
 
 void
 Openflow_datapath::send_cb(const size_t& bytes_transferred)
 {
+    boost::lock_guard<boost::mutex> lock(send_mutex);
     assert(is_sending);
     tx_buf_active->consume(bytes_transferred);
-    VLOG_DBG(lg, "sent %zu remaining %zu %zu", bytes_transferred,
+    lg.dbg("sent %zu remaining %zu %zu", bytes_transferred,
              tx_buf_active->size(), tx_buf_pending->size());
 
     if (tx_buf_active->size() == 0 && tx_buf_pending->size() > 0) {
         tx_buf_active.swap(tx_buf_pending);
-        oa_active.swap(oa_pending);
+        //oa_active.swap(oa_pending);
     }
 
     if (tx_buf_active->size() > 0)
@@ -190,25 +195,80 @@ Openflow_datapath::send_cb(const size_t& bytes_transferred)
         is_sending = false;
 }
 
-size_t
-Openflow_datapath::send(const v1::ofp_msg* msg)
+int
+Openflow_datapath::send_packet_out(uint32_t buf_id, void *buf,
+                        int buf_size, uint32_t in_port, uint32_t out_port)
 {
-    VLOG_DBG(lg, "sending %s", msg->name());
-    assert(msg->length() <= v1::OFP_MAX_MSG_BYTES);
-    
-    // Return 0 if not enough space in the buffer
-    if (msg->length() > tx_buf_pending->max_size() - tx_buf_pending->size()) {
+    enum ofputil_protocol protocol;
+    protocol = ofputil_protocol_from_ofp_version(OFP13_VERSION);
+    struct ofputil_packet_out po;
+
+    po.buffer_id = buf_id;
+    if (po.buffer_id == UINT32_MAX)
+    {
+        po.packet = buf;
+        po.packet_len = buf_size;
+    }
+    else
+    {
+        po.packet = NULL;
+        po.packet_len = 0;
+    }
+    po.in_port = in_port;
+
+    uint64_t ofpacts_stub[64 / 8];
+    struct ofpbuf ofpacts;
+    ofpbuf_use_stack(&ofpacts, ofpacts_stub, sizeof(ofpacts_stub));
+    if (out_port != OFPP_MAX && out_port != OFPP_NONE)
+    {
+        ofpact_put_OUTPUT(&ofpacts)->port = out_port;
+    }
+    ofpact_pad(&ofpacts);
+
+    po.ofpacts = (struct ofpact *)ofpacts.data;
+    po.ofpacts_len = ofpacts.size;
+
+    struct ofpbuf *msg = ofputil_encode_packet_out(&po, protocol);
+    int ret = send_of_buf(msg);
+    dump_of_buf(msg);
+    ofpbuf_delete(msg);
+    return ret;
+}
+
+void
+Openflow_datapath::dump_of_buf(struct ofpbuf *msg)
+{
+    char *s = ofp_to_string(msg->data, msg->size, 5);
+    lg.dbg("ofp dump:%s\n", s);
+    free(s);
+}
+
+/*
+  * Warning : Maybe not thread safe
+  */
+size_t
+Openflow_datapath::send_of_buf(struct ofpbuf *msg)
+{
+    ofpmsg_update_length(msg);
+    boost::lock_guard<boost::mutex> lock(send_mutex);
+    assert(msg->size <= v13::OFP_MAX_MSG_BYTES);
+
+    /* Not enough space to send package */
+    if (msg->size > tx_buf_pending->max_size() - tx_buf_pending->size()) {
         return 0;
     }
+    else{
+        tx_buf_pending->prepare(msg->size);
+        void* temp = msg->data;
+        tx_buf_pending->sputn(static_cast<const char*>(temp), msg->size);
+    }
 
-    const_cast<v1::ofp_msg*>(msg)->factory(*oa_pending, NULL);
-
+    /* send_cb will send all buffer */
     if (is_sending)
-        return msg->length();
+        return msg->size;
 
     if (tx_buf_active->size() == 0 && tx_buf_pending->size() > 0) {
         tx_buf_active.swap(tx_buf_pending);
-        oa_active.swap(oa_pending);
     }
 
     if (tx_buf_active->size() > 0)
@@ -217,14 +277,13 @@ Openflow_datapath::send(const v1::ofp_msg* msg)
         connection->send(*tx_buf_active);
     }
 
-    return msg->length();
+    return msg->size;
 }
 
 void
-Openflow_datapath::handle_message(const v1::ofp_msg* msg)
+Openflow_datapath::handle_message(uint8_t* data, const size_t len)
 {
-    VLOG_DBG(lg, "received %s", msg->name());
-    Openflow_event ofe(*this, msg);
+    //VLOG_DBG(lg, "received %s", msg->name());
     switch (datapath_state)
     {
     case IDLE:
@@ -234,10 +293,39 @@ Openflow_datapath::handle_message(const v1::ofp_msg* msg)
         //VLOG_WARN(lg, "%s: Unexpected message (type 0x%02"PRIx8") "
         //          "waiting for hello", to_string().c_str(), oh->type);
         //transit_to(S_DISCONNECTED);
-        handle_handshake(ofe);
-    case CONNECTED:
-        manager.dispatch(ofe);
+        if (STOP == handle_handshake(data, len))
+        {
+            close();
+        }
         break;
+    case CONNECTED:
+    {
+        const struct ofp_header *oh = (struct ofp_header *)data;
+        enum ofptype type;
+        enum ofperr error;
+
+        error = ofptype_decode(&type, oh);
+        if (error)
+        {
+            lg.err("decode of failed: %d", error);
+            close();
+            break;
+        }
+
+        std::string name = get_eventname_from_type(type);
+        lg.dbg("dispatch openflow event: %s", name.c_str());
+        if (type == OFPTYPE_PACKET_IN)
+        {
+            Packet_in_event pie(shared_from_this(), name, oh);
+            manager.dispatch(pie);
+        }
+        else
+        {
+            Openflow_event ofe(shared_from_this(), name, oh);
+            manager.dispatch(ofe);
+        }
+        break;
+    }
     case DISCONNECTED:
         break;
     default:
@@ -249,86 +337,158 @@ Openflow_datapath::handle_message(const v1::ofp_msg* msg)
 }
 
 Disposition
-Openflow_datapath::handle_disconnect(const Event& e)
+Openflow_datapath::handle_handshake(uint8_t* data, const size_t len)
 {
-    header_set = false;
-    hello_received = false;
-    features_req_sent = false;
-    return STOP;
-}
+    struct ofpbuf msg;
+    ofpbuf_use_const(&msg, data, len);
 
-Disposition
-Openflow_datapath::handle_error_msg(const Event& e)
-{
-    /*
-    auto ofe = assert_cast<const Openflow_event&>(e);
-    auto oer = assert_cast<const v1::ofp_error_msg*>(ofe.msg);
+    const struct ofp_header *oh = (struct ofp_header *)msg.data;
+    enum ofptype type;
+    enum ofperr error;
 
-    */
-    return STOP;
-}
-
-Disposition
-Openflow_datapath::handle_handshake(const Event& e)
-{
-    auto ofe = assert_cast<const Openflow_event&>(e);
-    if (ofe.dp != *this)
-        return CONTINUE;
-    const uint8_t& type = ofe.msg->type();
-    if (type == v1::ofp_msg::OFPT_ERROR)
+    error = ofptype_decode(&type, oh);
+    if (error || type == OFPTYPE_ERROR)
     {
-        //auto oe = assert_cast<const v1::ofp_error_msg*>(ofe.msg);
+        lg.err("decode handshake of packet failed");
+        return STOP;
     }
-    else if (type == v1::ofp_msg::OFPT_FEATURES_REPLY)
+
+    if (type == OFPTYPE_FEATURES_REPLY)
     {
         if (!hello_received && !features_req_sent)
         {
+            lg.err("handshake invalid feature reply");
             return STOP;
         }
-        auto ofe = assert_cast<const Openflow_event&>(e);
-        auto ofr = assert_cast<const v1::ofp_features_reply*>(ofe.msg);
+        struct ofputil_switch_features features;
+        struct ofpbuf b;
 
-        features = *ofr;
-        id_ = datapathid::from_host(features.datapath_id());
-
+        error = ofputil_decode_switch_features(oh, &features, &b);
+        if (error)
+        {
+            lg.err("handshake decode switch feature failed");
+            return STOP;
+        }
+        id_ = datapathid::from_host(features.datapath_id);
         // TODO: fix this
         datapath_state = CONNECTED;
+        lg.dbg("dispatch join event: %s", id_.string().c_str());
         Openflow_datapath_join_event dpje(shared_from_this());
         manager.dispatch(dpje);
+        send_port_desc_request();
+        handshake_done = true;
+        return CONTINUE;
     }
-    else if (type == v1::ofp_msg::OFPT_HELLO)
+
+    if (type == OFPTYPE_HELLO)
     {
-        const v1::ofp_hello* oh = assert_cast<const v1::ofp_hello*>(ofe.msg);
-        if (oh->length() > v1::OFP_HELLO_BYTES)
-        {
-            VLOG_WARN(lg, "Extra-long hello (%u extra bytes)",
-                      oh->length() - v1::OFP_HELLO_BYTES);
+        const struct ofp_header *oh = (struct ofp_header*)data;
+        of_version = int(oh->version);
+        if (of_version < OFP13_VERSION) {
+            lg.warn("%s: negotiation failed %d",
+                      id_.string().c_str(), of_version);
+            send_hello_error();
+            return STOP;
         }
-
-        if (oh->version() == v1::OFP_VERSION)
-        {
-            VLOG_WARN(lg, "Negotiated OpenFlow version 0x%02x", oh->version());
-            // send feat req
-            v1::ofp_features_request fr;
-            v1::ofp_set_config sc;
-            send(oh);
-            send(&fr);
-            send(&sc);
-
-            hello_received = true;
-            features_req_sent = true;
-        }
-        else
-        {
-            VLOG_WARN(lg, "Version negotiation failed: we support "
-                      "version 0x%02x but peer supports no later than"
-                      "version 0x%02x", v1::OFP_VERSION, oh->version());
-            // TODO: send an error with type OFPET_HELLO_FAILED and code
-            // OFPHFC_INCOMPATIBLE
-        }
+        hello_received = true;
     }
-    return STOP;
+    
+    if (!features_req_sent)
+    {
+        lg.dbg("send feature request");
+        send_hello();
+        send_features_request();
+        send_switch_config();
+        features_req_sent = true; 
+    }
+    return CONTINUE;
 }
+
+int Openflow_datapath::send_common_request(enum ofpraw raw_type)
+{
+    struct ofpbuf *msg;
+    msg = ofpraw_alloc(raw_type, OFP13_VERSION, 0);
+    int ret = send_of_buf(msg);
+    ofpbuf_delete(msg);
+    return ret;
+}
+
+int Openflow_datapath::send_hello()
+{
+    struct ofpbuf *hello = ofputil_encode_hello(0x1e);   //ovs-ofctl encode-hello 0x1e OFPT_HELLO (OF1.3)
+    int ret = send_of_buf(hello);
+    ofpbuf_delete(hello);
+    return ret;
+}
+
+int Openflow_datapath::send_hello_error()
+{
+    struct ofpbuf *b;
+    b = ofperr_encode_hello(OFPERR_OFPHFC_INCOMPATIBLE, OFP13_VERSION, "just of 1.3");
+    int ret = send_of_buf(b);
+    ofpbuf_delete(b);
+    return ret;
+}
+
+int Openflow_datapath::send_error(enum ofperr error, const struct ofp_header *request)
+{
+    struct ofpbuf *msg;
+    msg = ofperr_encode_reply(error, request);
+    int ret = send_of_buf(msg);
+    return ret;
+}
+
+int Openflow_datapath::send_echo_request()
+{
+    return send_common_request(OFPRAW_OFPT_ECHO_REQUEST);
+}
+
+int Openflow_datapath::send_echo_reply(const Event& e)
+{
+    auto ofe = assert_cast<const Openflow_event&>(e);
+    struct ofpbuf *reply = make_echo_reply(ofe.oh);
+    return send_of_buf(reply);
+}
+
+int Openflow_datapath::send_port_desc_request()
+{
+    //return send_common_request(OFPRAW_OFPST_PORT_DESC_REQUEST);
+    struct ofpbuf *msg;
+    msg = ofpraw_alloc(OFPRAW_OFPST_PORT_DESC_REQUEST, OFP13_VERSION, 0);
+    int ret = send_of_buf(msg);
+    ofpbuf_delete(msg);
+    return ret;
+}
+
+int Openflow_datapath::send_stats_request()
+{
+    return 0;
+}
+
+int Openflow_datapath::send_barrier_request()
+{
+    return 0;
+}
+
+int Openflow_datapath::send_features_request()
+{
+    return send_common_request(OFPRAW_OFPT_FEATURES_REQUEST);
+}
+
+int Openflow_datapath::send_switch_config()
+{
+    struct ofpbuf *msg;
+    struct ofp_switch_config *ofpsc;
+    msg = ofpraw_alloc(OFPRAW_OFPT_SET_CONFIG, OFP13_VERSION, 0);
+    ofpsc = (struct ofp_switch_config*)ofpbuf_put_zeros(msg, sizeof *ofpsc);
+    ofpsc->flags = OFPC_FRAG_NORMAL;
+    ofpsc->miss_send_len = v13::OFP_MAX_MSG_BYTES - v13::OFP_HEADER_BYTES;
+    ofpmsg_update_length(msg);
+    int ret = send_of_buf(msg);
+    ofpbuf_delete(msg);
+    return ret;
+}
+
 
 #if 0
 void

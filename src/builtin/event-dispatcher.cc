@@ -195,6 +195,10 @@ Event_dispatcher::dispatch(const Event& event) const
             }
         }
     }
+    else
+    {
+        VLOG_WARN(lg, "Event no found: %s", event.get_name().c_str());
+    }
 }
 
 Disposition

@@ -272,6 +272,7 @@ void shutdown(int param)
 {
     VLOG_ERR(lg, "About to shut down on signal %d", param);
     post_shutdown();
+    exit(0);
 }
 
 int main(int argc, char *argv[])
@@ -531,10 +532,10 @@ int main(int argc, char *argv[])
             "connection-manager",
             platform_config_path);
 
-        kernel->install(connection_manager_context, INSTALLED);
-
         /* Finish the booting */
         finish_booting(kernel, applications);
+
+        kernel->install(connection_manager_context, INSTALLED);
 
         Event_dispatcher* ed =
             dynamic_cast<Event_dispatcher*>(event_dispatcher_context->get_instance());
