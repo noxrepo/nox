@@ -79,6 +79,12 @@ Component::post(const Event& event) const
     event_dispatcher->post(event);
 }
 
+unique_ptr<boost::asio::deadline_timer>
+Component::post_callback(const Component::Callback& callback, const timeval& duration)
+{
+    return event_dispatcher->post(callback, duration);
+}
+
 void
 Component::register_event(const Event_name& name) const
 {

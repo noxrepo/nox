@@ -26,7 +26,7 @@
 #include <boost/unordered_map.hpp>
 
 #include "component.hh"
-#include <openflow/openflow-1.0.hh>
+#include "of_nox.hh"
 #include "openflow-datapath.hh"
 #include "netinet++/datapathid.hh"
 
@@ -43,6 +43,7 @@ class Openflow_manager : public Component
 public:
     Openflow_manager(const Component_context* ctxt);
     void configure();
+    bool get_dp_from_dpid(const datapathid &dpid, boost::shared_ptr<Openflow_datapath> &dp);
 
 private:
     typedef boost::unordered_map<datapathid, boost::shared_ptr<Openflow_datapath> >
@@ -61,6 +62,9 @@ private:
     Disposition handle_datapath_join(const Event&);
     Disposition handle_datapath_leave(const Event&);
     Disposition handle_echo_request(const Event&);
+    Disposition handle_role_reply(const Event&);
+    Disposition handle_vendor(const Event&);
+    Disposition handle_error(const Event&);
 };
 
 } // namespace openflow

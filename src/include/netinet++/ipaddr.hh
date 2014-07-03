@@ -38,6 +38,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <boost/functional/hash.hpp>
 
 namespace vigil
 {
@@ -273,7 +274,7 @@ ipaddr::ipaddr(const uint8_t* addr_in)
 inline
 ipaddr::ipaddr(uint32_t addr_in)
 {
-    addr = htonl(addr_in);
+    addr = addr_in;
 }
 //-----------------------------------------------------------------------------
 
@@ -664,6 +665,21 @@ bool ipaddr::isPrivate()
            ((ntohl(addr) >= 0xC0A80000L) && (ntohl(addr) <= 0xC0ABFFFFL));
 }
 //-----------------------------------------------------------------------------
+
+inline std::size_t hash_value(const ipaddr& ip)
+{
+    boost::hash<uint64_t> hasher;
+    return hasher(ip.addr);
+};
+
+struct ipaddr_hash
+{
+    std::size_t operator()(const ipaddr& ip) const
+    {
+        boost::hash<uint64_t> hasher;
+        return hasher(ip.addr);
+    }
+};
 
 }
 

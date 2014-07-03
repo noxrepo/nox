@@ -63,7 +63,7 @@ namespace
 //                             hexit_value helper routine
 //-----------------------------------------------------------------------------
 int
-hexit_value(int c)
+hexit_value2(int c)
 {
     if (c >= '0' && c <= '9')
     {
@@ -531,14 +531,14 @@ ethernetaddr::init_from_string(const char* str)
 
     for (int i = 0; i < 6; i++)
     {
-        int digit1 = hexit_value(*str++);
+        int digit1 = hexit_value2(*str++);
         if (digit1 < 0)
         {
             goto error;
         }
         new_octet[i] = digit1;
 
-        int digit2 = hexit_value(*str);
+        int digit2 = hexit_value2(*str);
         if (digit2 >= 0)
         {
             new_octet[i] = new_octet[i] * 16 + digit2;
@@ -584,6 +584,15 @@ inline std::size_t hash_value(const ethernetaddr& ethaddr)
     return boost::hash_range(ethaddr.octet, ethaddr.octet + sizeof ethaddr.octet);
 }
 //-----------------------------------------------------------------------------
+
+struct ethernetaddr_hash
+{
+    std::size_t operator()(const ethernetaddr& ethaddr) const
+    {
+        return boost::hash_range(ethaddr.octet, ethaddr.octet + sizeof ethaddr.octet);
+    }
+};
+
 
 } // namespace vigil
 

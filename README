@@ -1,3 +1,7 @@
+NOX with OF1.3 supported.
+Use libopenflow which is migrated form ovs2.0(https://github.com/frankiezhu/libofproto).
+
+---------------------------------------------------------------------------
 NOX Network Control Platform
 -----------------------------------
 Copyright (C) 2008-2009 Nicira Networks
