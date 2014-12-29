@@ -64,10 +64,10 @@ private:
         PSSL = 3,
         UNKNOWN = 4,
         // should be last
-        _AMMOUNT = UNKNOWN+1
+        NR_CONNECTION_TYPES = UNKNOWN+1
     };
 
-    static const std::string Connection_type_string[_AMMOUNT];
+    static const std::string Connection_type_string[NR_CONNECTION_TYPES];
 
     typedef boost::function<void()> Listen_callback;
     //typedef std::string Protocol_name;

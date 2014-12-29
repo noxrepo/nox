@@ -49,7 +49,7 @@ namespace bassl = ::boost::asio::ssl;
 
 static Vlog_module lg("connection_manager");
 
-const std::string Connection_manager::Connection_type_string[_AMMOUNT] =
+const std::string Connection_manager::Connection_type_string[NR_CONNECTION_TYPES] =
 {
     "tcp",
     "ssl",
