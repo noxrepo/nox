@@ -55,7 +55,19 @@ public:
     void install();
 
 private:
-    enum Conn_t { TCP, SSL, PTCP, PSSL, UNKNOWN };
+
+    enum Connection_type
+    {
+        TCP = 0,
+        SSL = 1,
+        PTCP = 2,
+        PSSL = 3,
+        UNKNOWN = 4,
+        // should be last
+        NR_CONNECTION_TYPES = UNKNOWN+1
+    };
+
+    static const std::string Connection_type_string[NR_CONNECTION_TYPES];
 
     typedef boost::function<void()> Listen_callback;
     //typedef std::string Protocol_name;
@@ -72,7 +84,7 @@ private:
                        const std::list<std::string>& interfaces);
 
     void parse(const std::string& interface,
-               Conn_t& type,
+               Connection_type& type,
                std::string& ip,
                uint16_t& port,
                std::string& key,
@@ -88,7 +100,7 @@ private:
                           boost::shared_ptr<ssl_socket>,
                           Listen_callback, const boost::system::error_code&);
 
-    void connect(Conn_t type, const std::string& host, const uint16_t& port,
+    void connect(Connection_type type, const std::string& host, const uint16_t& port,
                  const std::string& key,
                  const std::string& cert,
                  const std::string& cafile);
@@ -98,7 +110,7 @@ private:
                 const std::string& key,
                 const std::string& cert,
                 const std::string& cafile);
-    void listen(Conn_t type, const std::string& bind_ip, const uint16_t& port,
+    void listen(Connection_type type, const std::string& bind_ip, const uint16_t& port,
                 const std::string& key,
                 const std::string& cert,
                 const std::string& cafile);

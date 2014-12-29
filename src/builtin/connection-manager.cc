@@ -49,7 +49,14 @@ namespace bassl = ::boost::asio::ssl;
 
 static Vlog_module lg("connection_manager");
 
-static const std::string conn_t_str[] = { "tcp", "ssl", "ptcp", "pssl" };
+const std::string Connection_manager::Connection_type_string[NR_CONNECTION_TYPES] =
+{
+    "tcp",
+    "ssl",
+    "ptcp",
+    "pssl",
+    "unknown"
+};
 
 Connection_manager::Connection_manager(const Component_context* ctxt,
                                        const std::list<std::string>& interfaces)
@@ -85,7 +92,7 @@ Connection_manager::install()
     /* Bind/listen to interfaces */
     BOOST_FOREACH(const std::string& interface, interfaces)
     {
-        Conn_t type;
+        Connection_type type;
         std::string host, key, cert, cafile;
         uint16_t port;
 
@@ -112,21 +119,21 @@ Connection_manager::install()
         if (type == TCP || type == SSL)
         {
             VLOG_DBG(lg, "connecting to %s:%s:%d:%s:%s:%s",
-                     conn_t_str[type].c_str(), host.c_str(), port,
+                     Connection_type_string[type].c_str(), host.c_str(), port,
                      key.c_str(), cert.c_str(), cafile.c_str());
             connect(type, host, port, key, cert, cafile);
         }
         else if (type == PTCP || type == PSSL)
         {
             VLOG_DBG(lg, "listening on %s:%s:%d:%s:%s:%s",
-                     conn_t_str[type].c_str(), host.c_str(), port,
+                     Connection_type_string[type].c_str(), host.c_str(), port,
                      key.c_str(), cert.c_str(), cafile.c_str());
             listen(type, host, port, key, cert, cafile);
         }
         else
         {
             throw std::runtime_error("Unsupported connection type \""
-                                     + conn_t_str[type] + "\"");
+                                     + Connection_type_string[type] + "\"");
         }
     }
 
@@ -137,7 +144,7 @@ Connection_manager::install()
 
 void
 Connection_manager::parse(const std::string& interface,
-                          Conn_t& type,
+                          Connection_type& type,
                           std::string& host,
                           uint16_t& port,
                           std::string& key,
@@ -159,13 +166,13 @@ Connection_manager::parse(const std::string& interface,
     size_t ntokens = tokens.size();
     if (ntokens >= 1)
     {
-        if (tokens[0] == "tcp")
+        if (tokens[0] == Connection_type_string[TCP])
             type = TCP;
-        else if (tokens[0] == "ssl")
+        else if (tokens[0] == Connection_type_string[SSL])
             type = SSL;
-        else if (tokens[0] == "ptcp")
+        else if (tokens[0] == Connection_type_string[PTCP])
             type = PTCP;
-        else if (tokens[0] == "pssl")
+        else if (tokens[0] == Connection_type_string[PSSL])
             type = PSSL;
 
         if (ntokens == 2)
@@ -245,7 +252,7 @@ Connection_manager::handle_handshake(bassl::stream_base::handshake_type type,
 }
 
 void
-Connection_manager::connect(Conn_t type,
+Connection_manager::connect(Connection_type type,
                             const std::string& host, const uint16_t& port,
                             const std::string& key,
                             const std::string& cert,
@@ -329,7 +336,7 @@ Connection_manager::listen(boost::shared_ptr<boost::asio::ip::tcp::acceptor> acc
 }
 
 void
-Connection_manager::listen(Conn_t type,
+Connection_manager::listen(Connection_type type,
                            const std::string& bind_ip, const uint16_t& port,
                            const std::string& key,
                            const std::string& cert,
